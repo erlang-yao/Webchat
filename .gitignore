@@ -33,6 +33,9 @@ yarn-error.log*
 # IDE / editor
 .idea/
 .vscode/
+
+# Claude Code local config
+.claude/
 *.suo
 *.ntvs*
 *.njsproj
