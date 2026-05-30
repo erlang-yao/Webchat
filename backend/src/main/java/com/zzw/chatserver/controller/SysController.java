@@ -12,6 +12,7 @@ import com.zzw.chatserver.service.OnlineUserService;
 import com.zzw.chatserver.service.SysService;
 import com.zzw.chatserver.service.UserService;
 import com.zzw.chatserver.utils.FastDFSUtil;
+import com.zzw.chatserver.utils.LocalFileUtil;
 import com.zzw.chatserver.utils.SystemUtil;
 import org.apache.commons.io.IOUtils;
 import org.csource.common.MyException;
@@ -37,6 +38,12 @@ public class SysController {
 
     @Value("${fastdfs.nginx.host}")
     private String nginxHost;
+
+    @Value("${file.upload-dir:uploads}")
+    private String uploadDir;
+
+    @Value("${file.base-url:http://localhost:5555/chat}")
+    private String fileBaseUrl;
 
     @Resource
     private SensitiveFilter sensitiveFilter;
@@ -84,12 +91,25 @@ public class SysController {
      */
     @PostMapping("/uploadFile")
     @ResponseBody
-    public R uploadFile(MultipartFile file) throws IOException, MyException {
-        //根据扩展名来设置消息类型：emoji/text/img/file/sys/whiteboard/video/audio
-        String filePartName = FastDFSUtil.uploadFile(file);
-        String filePath = nginxHost + filePartName;
-        // System.out.println("在服务器的文件名为：" + filePartName);
-        return R.ok().data("filePath", filePath);
+    public R uploadFile(MultipartFile file) {
+        if (file == null || file.isEmpty()) {
+            return R.error().message("文件不能为空");
+        }
+        try {
+            // 优先走 FastDFS；本地开发未配置 FastDFS 时自动回退到本地磁盘
+            String filePartName = FastDFSUtil.uploadFile(file);
+            String filePath = nginxHost + filePartName;
+            return R.ok().data("filePath", filePath);
+        } catch (Exception fastDfsError) {
+            try {
+                String absoluteUploadDir = LocalFileUtil.resolveUploadDir(uploadDir);
+                String filePath = LocalFileUtil.upload(file, absoluteUploadDir, fileBaseUrl);
+                return R.ok().data("filePath", filePath);
+            } catch (IOException localError) {
+                localError.printStackTrace();
+                return R.error().message("文件上传失败：" + localError.getMessage());
+            }
+        }
     }
 
     //获取文件的真实地址，主要用于防盗链
