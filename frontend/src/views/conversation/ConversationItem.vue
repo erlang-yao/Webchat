@@ -136,6 +136,7 @@
           [MSG_TYPES.artBoard]: '[白板协作]',
           [MSG_TYPES.video]: '[视频通话]',
           [MSG_TYPES.audio]: '[语音通话]',
+          [MSG_TYPES.voice]: '[语音]',
         }
         return MSG_TYPE_TEXT[lastNewsObj.messageType] || ''
       },
