@@ -29,4 +29,7 @@ server:
   port: 5555
 fastdfs:
   nginx:
-    host: https://xxxxx/ # 更换为自己的域名
+    host: https://192.168.101.129/ # 更换为自己的域名
+file:
+  upload-dir: uploads
+  base-url: https://192.168.101.129/chat
