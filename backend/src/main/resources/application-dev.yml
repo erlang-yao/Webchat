@@ -4,8 +4,8 @@ spring:
       host: 127.0.0.1
       database: chatdb
       port: 27017
-      #username: xxxx
-      #password: xxxx
+    #      username: xxxx
+    #      password: xxxx
     redis:
       repositories:
         enabled: false
@@ -13,7 +13,7 @@ spring:
     database: 5
     host: 127.0.0.1
     port: 6379
-    #password: 123456
+    password: 123456
 logging:
   level:
     org.springframework.data.mongodb.core: DEBUG
@@ -32,5 +32,7 @@ server:
   port: 5555
 fastdfs:
   nginx:
-    host: http://localhost:5555/chat/
-    #host: https://xxxxx/ # 更换为自己的域名
+    host: https://xxxxx/ # 更换为自己的域名
+file:
+  upload-dir: uploads
+  base-url: http://localhost:5555/chat

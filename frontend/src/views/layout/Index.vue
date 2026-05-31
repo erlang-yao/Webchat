@@ -180,10 +180,12 @@
         // console.log('收到新消息：', news)
         //判断一下输出的类型，若不是text类型，则截取 fileRawName
         let wenben = ''
-        if (news.messageType !== 'text') {
-          wenben = news.fileRawName ? news.fileRawName.slice(0, 10) : ''
-        } else {
+        if (news.messageType === 'text') {
           wenben = news.message ? news.message.slice(0, 10) : ''
+        } else if (news.messageType === 'voice') {
+          wenben = '[语音]'
+        } else {
+          wenben = news.fileRawName ? news.fileRawName.slice(0, 10) : ''
         }
         this.$notify({
           title: '收到新消息',

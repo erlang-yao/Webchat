@@ -83,5 +83,6 @@ export const MSG_TYPES = {
   sys: 'sys',
   text: 'text',
   img: 'img',
-  file: 'file'
+  file: 'file',
+  voice: 'voice'
 }

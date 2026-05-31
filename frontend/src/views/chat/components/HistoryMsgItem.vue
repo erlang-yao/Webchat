@@ -18,6 +18,7 @@
           </a>
         </span>
       </div>
+      <span v-else-if="msgItem.messageType === 'voice'" class="voice-history">[语音 {{ msgItem.duration || 1 }}"]</span>
       <span v-else>{{msgItem.message}}</span>
     </div>
     <transition name="fade">

@@ -57,6 +57,9 @@
               :get-local-url="getLocalUrl"/>
           </transition>
         </span>
+        <span class="tool-item" :class="{ active: isRecording }" @click.stop="toggleVoiceRecord">
+          <i class="item iconfont icon-yuyin" title="语音消息"/>
+        </span>
         <!--        <span class="tool-item">-->
         <!--          <i class="item iconfont icon-huaban"/>-->
         <!--        </span>-->
@@ -80,6 +83,14 @@
       <transition name="fade">
         <custom-emoji v-if="showEmojiCom" class="emoji-component" @addemoji="addEmoji"/>
       </transition>
+      <transition name="fade">
+        <div v-if="isRecording" class="voice-record-panel">
+          <span class="record-dot"/>
+          <span class="record-time">{{ formatRecordTime(recordSeconds) }}</span>
+          <span class="record-tip">录音中，再次点击麦克风结束并发送</span>
+          <el-button size="mini" @click.stop="cancelVoiceRecord">取消</el-button>
+        </div>
+      </transition>
     </div>
   </div>
 </template>
@@ -90,7 +101,7 @@
   import chatHeader from "./components/Header"
   import messageList from "./components/MessageList"
   import {SET_UNREAD_NEWS_TYPE_MAP} from "@/store/constants"
-  import {conversationTypes, uploadStatusMap} from '@/const'
+  import {conversationTypes, uploadStatusMap, MSG_TYPES} from '@/const'
   import customEmoji from '@/components/customEmoji'
   import upFile from '@/components/customUploadFile'
   import groupDesc from './components/GroupDesc'
@@ -119,7 +130,14 @@
         useAnimation: false,
         lastEnterTime: Date.now(), // 对方进入该会话的时间
         showHistoryMsg: false,
-        datetamp: Date.now() // 切换群聊重新强制加载群聊详情
+        datetamp: Date.now(), // 切换群聊重新强制加载群聊详情
+        isRecording: false,
+        recordSeconds: 0,
+        recordTimer: null,
+        mediaRecorder: null,
+        audioChunks: [],
+        recordStream: null,
+        voiceUploading: false
       }
     },
     computed: {
@@ -312,6 +330,143 @@
       addEmoji(emoji = '') {
         this.messageText += emoji
       },
+      formatRecordTime(seconds) {
+        const m = Math.floor(seconds / 60)
+        const s = seconds % 60
+        return `${String(m).padStart(2, '0')}:${String(s).padStart(2, '0')}`
+      },
+      getVoiceMimeType() {
+        if (typeof MediaRecorder !== 'undefined' && MediaRecorder.isTypeSupported('audio/webm;codecs=opus')) {
+          return 'audio/webm;codecs=opus'
+        }
+        if (typeof MediaRecorder !== 'undefined' && MediaRecorder.isTypeSupported('audio/webm')) {
+          return 'audio/webm'
+        }
+        return 'audio/mp4'
+      },
+      async toggleVoiceRecord() {
+        if (this.voiceUploading) return
+        if (this.isRecording) {
+          await this.stopVoiceRecordAndSend()
+          return
+        }
+        await this.startVoiceRecord()
+      },
+      async startVoiceRecord() {
+        if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) {
+          this.$message.error('当前浏览器不支持录音')
+          return
+        }
+        try {
+          this.recordStream = await navigator.mediaDevices.getUserMedia({audio: true})
+          const mimeType = this.getVoiceMimeType()
+          this.audioChunks = []
+          try {
+            this.mediaRecorder = new MediaRecorder(this.recordStream, {mimeType})
+          } catch (err) {
+            this.mediaRecorder = new MediaRecorder(this.recordStream)
+          }
+          this.mediaRecorder.ondataavailable = (e) => {
+            if (e.data && e.data.size > 0) {
+              this.audioChunks.push(e.data)
+            }
+          }
+          this.mediaRecorder.start()
+          this.isRecording = true
+          this.recordSeconds = 0
+          this.recordTimer = setInterval(() => {
+            this.recordSeconds++
+            if (this.recordSeconds >= 60) {
+              this.stopVoiceRecordAndSend()
+            }
+          }, 1000)
+        } catch (err) {
+          this.$message.error('无法访问麦克风，请检查权限')
+        }
+      },
+      cleanupVoiceRecord() {
+        if (this.recordTimer) {
+          clearInterval(this.recordTimer)
+          this.recordTimer = null
+        }
+        if (this.recordStream) {
+          this.recordStream.getTracks().forEach(track => track.stop())
+          this.recordStream = null
+        }
+        this.mediaRecorder = null
+        this.audioChunks = []
+        this.isRecording = false
+        this.recordSeconds = 0
+      },
+      cancelVoiceRecord() {
+        if (this.mediaRecorder && this.mediaRecorder.state !== 'inactive') {
+          this.mediaRecorder.ondataavailable = null
+          this.mediaRecorder.onstop = null
+          this.mediaRecorder.stop()
+        }
+        this.cleanupVoiceRecord()
+      },
+      stopVoiceRecordAndSend() {
+        return new Promise((resolve) => {
+          if (!this.mediaRecorder || this.mediaRecorder.state === 'inactive') {
+            this.cleanupVoiceRecord()
+            resolve()
+            return
+          }
+          const duration = Math.max(1, this.recordSeconds)
+          this.mediaRecorder.onstop = async () => {
+            const mimeType = this.getVoiceMimeType()
+            const ext = mimeType.indexOf('webm') > -1 ? 'webm' : 'mp4'
+            const blob = new Blob(this.audioChunks, {type: mimeType.split(';')[0]})
+            this.cleanupVoiceRecord()
+            if (blob.size < 100 || duration < 1) {
+              this.$message.warning('录音时间太短')
+              resolve()
+              return
+            }
+            await this.uploadAndSendVoice(blob, duration, ext)
+            resolve()
+          }
+          this.mediaRecorder.stop()
+        })
+      },
+      async uploadAndSendVoice(blob, duration, ext) {
+        const fileName = `voice_${Date.now()}.${ext}`
+        const file = new File([blob], fileName, {type: blob.type})
+        const formdata = new FormData()
+        formdata.append('file', file)
+        this.voiceUploading = true
+        try {
+          const res = await this.$http.uploadFile(formdata)
+          if (res.data.code !== 2000) {
+            this.$message.error('语音上传失败')
+            return
+          }
+          const common = this.generatorMessageCommon()
+          const newMessage = {
+            ...common,
+            fileRawName: fileName,
+            message: res.data.data.filePath,
+            messageType: MSG_TYPES.voice,
+            duration
+          }
+          this.messages = [...this.messages, newMessage]
+          this.$socket.emit('sendNewMessage', newMessage)
+          this.$store.dispatch('news/SET_LAST_NEWS', {
+            type: 'edit',
+            res: {
+              roomId: this.currentConversation.roomId,
+              news: newMessage
+            }
+          })
+          this.scrollBottom = true
+        } catch (err) {
+          const errMsg = (err.response && err.response.data && err.response.data.message) || '语音发送失败，请检查服务端是否已启动'
+          this.$message.error(errMsg)
+        } finally {
+          this.voiceUploading = false
+        }
+      },
       async send(e) {
         e.preventDefault()
         if (!this.messageText) {
@@ -474,6 +629,7 @@
     beforeDestroy() {
       // console.log('chatArea BeforeDestroy')
       document.removeEventListener('click', this.handlerShowEmoji)
+      this.cancelVoiceRecord()
     },
   };
 </script>
@@ -634,6 +790,50 @@
         position: absolute;
         bottom: 101%;
       }
+
+      .voice-record-panel {
+        position: absolute;
+        left: 10px;
+        right: 10px;
+        bottom: 10px;
+        display: flex;
+        align-items: center;
+        padding: 8px 12px;
+        background: rgba(0, 0, 0, 0.75);
+        color: #fff;
+        border-radius: 6px;
+        z-index: 20;
+
+        .record-dot {
+          width: 8px;
+          height: 8px;
+          border-radius: 50%;
+          background: #f56c6c;
+          margin-right: 8px;
+          animation: record-blink 1s infinite;
+        }
+
+        .record-time {
+          font-size: 14px;
+          margin-right: 12px;
+          min-width: 42px;
+        }
+
+        .record-tip {
+          flex: 1;
+          font-size: 12px;
+          opacity: 0.85;
+        }
+      }
+    }
+  }
+
+  @keyframes record-blink {
+    0%, 100% {
+      opacity: 1;
+    }
+    50% {
+      opacity: 0.3;
     }
   }
 </style>
