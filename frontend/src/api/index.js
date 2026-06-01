@@ -4,6 +4,7 @@ import singlemessage from './modules/singlemessage'
 import sys from './modules/sys'
 import validate from './modules/validate'
 import user from './modules/user'
+import exportModule from './modules/export'
 
 
 export default {
@@ -13,4 +14,5 @@ export default {
   ...singlemessage,
   ...sys,
   ...validate,
+  ...exportModule,
 }

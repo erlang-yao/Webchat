@@ -73,6 +73,12 @@
               :class="showHistoryMsg ? 'history-btn normal-font el-icon-caret-bottom' : 'history-btn normal-font el-icon-caret-top'"
               @click="setShowHistoryMsg">历史记录
         </span>
+        <span class="tool-item export-btn"
+              :class="{ 'is-exporting': isExporting }"
+              @click="exportChatHistory"
+              title="导出聊天记录">
+          <i class="item el-icon-download"/>
+        </span>
       </div>
       <div class="operation">
         <el-button @click="send" type="success" size="small" round>发送</el-button>
@@ -137,7 +143,8 @@
         mediaRecorder: null,
         audioChunks: [],
         recordStream: null,
-        voiceUploading: false
+        voiceUploading: false,
+        isExporting: false
       }
     },
     computed: {
@@ -210,6 +217,53 @@
       },
       setShowHistoryMsg() {
         this.showHistoryMsg = !this.showHistoryMsg
+      },
+      /** 导出当前会话聊天记录 */
+      async exportChatHistory() {
+        if (this.isExporting) return
+        if (!this.currentConversation || !this.currentConversation.roomId) {
+          this.$message.warning('请先选择一个会话')
+          return
+        }
+        this.isExporting = true
+        const loading = this.$loading({
+          lock: true,
+          text: '正在导出聊天记录，请稍候...',
+          spinner: 'el-icon-loading',
+          background: 'rgba(0, 0, 0, 0.6)'
+        })
+        try {
+          // 获取会话名称
+          let conversationName = '聊天记录'
+          if (this.currentConversation.isGroup) {
+            conversationName = (this.currentConversation.groupInfo &&
+              this.currentConversation.groupInfo.title) || '群聊'
+          } else {
+            conversationName = this.currentConversation.nickname || '联系人'
+          }
+          const params = {
+            roomId: this.currentConversation.roomId,
+            conversationType: this.currentConversation.conversationType,
+            conversationName: conversationName
+          }
+          const result = await this.$http.exportChatHistory(params)
+          // 触发浏览器下载
+          const url = window.URL.createObjectURL(result.blob)
+          const link = document.createElement('a')
+          link.href = url
+          link.download = result.filename
+          document.body.appendChild(link)
+          link.click()
+          document.body.removeChild(link)
+          window.URL.revokeObjectURL(url)
+          this.$message.success('聊天记录导出成功！')
+        } catch (err) {
+          console.error('导出聊天记录失败:', err)
+          this.$message.error('导出失败：' + (err.message || '未知错误'))
+        } finally {
+          this.isExporting = false
+          loading.close()
+        }
       },
       /**最后进入该会话的时间 */
       setLastEnterTime(time) {
@@ -758,6 +812,26 @@
           top: 7px;
           right: 5px;
           cursor: pointer;
+        }
+
+        .export-btn {
+          position: absolute;
+          top: 2px;
+          right: 80px;
+          cursor: pointer;
+          font-size: 18px;
+          color: #606266;
+          transition: color 0.2s;
+
+          &:hover {
+            color: #409eff;
+          }
+
+          &.is-exporting {
+            color: #409eff;
+            cursor: not-allowed;
+            opacity: 0.6;
+          }
         }
       }
 
