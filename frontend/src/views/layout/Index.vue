@@ -363,7 +363,6 @@
     background-repeat: no-repeat;
     background-size: cover;
     background-attachment: fixed;
-    background-color: #e9ebee;
     position: relative;
     transition: all .4s ease-out;
 
@@ -405,11 +404,12 @@
         margin: -336px 0 0 -510px;
         width: 1020px;
         height: 672px;
-        background-color: #e9ebee;
+        background-color: #F5F5F5;
         color: #333;
-        border-radius: 5px;
+        border-radius: 8px;
+        box-shadow: 0 2px 12px rgba(0, 0, 0, .08);
         padding: 0;
-        opacity: .8;
+        opacity: .98;
         /*针对移动端做特殊处理*/
         &.mobile {
           left: 0;
@@ -423,7 +423,7 @@
         .co-messager-aside {
           width: 7%;
           height: 100%;
-          border-right: 1px solid #cccccc;
+          border-right: 1px solid #3A3A3A;
 
           &.mobile {
             position: absolute;

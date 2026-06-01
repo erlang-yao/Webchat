@@ -199,47 +199,39 @@
   .conversationitem__cmp {
     @import "./../../../static/css/var.scss";
     position: relative;
-    height: 60px;
+    height: 68px;
     display: flex;
-    margin: 5px 0;
+    margin: 0;
     justify-content: space-between;
     align-items: center;
     cursor: pointer;
 
     &:hover {
       .wrapper {
-        background-color: rgba(0, 0, 0, 0.1);
-        transition: all 0.5s ease-in;
-      }
-
-      .el-icon-more {
-        display: block;
-      }
-
-      .el-icon-circle-close {
-        opacity: 1;
+        background-color: #EDEDED;
+        transition: background-color 0.2s;
       }
     }
 
     &.active {
       .wrapper {
-        background-color: rgba(0, 0, 0, 0.1);
-        transition: all 0.5s ease-in;
+        background-color: #E0E0E0;
       }
     }
 
     .conversation-info {
       width: 100%;
-      height: 60px;
-      padding: 0 10px;
+      height: 68px;
+      padding: 0 15px;
 
       .wrapper {
         display: flex;
-        height: 60px;
-        padding: 0 5px;
+        height: 68px;
+        padding: 10px 0;
         align-items: center;
-        border-radius: 10px;
+        border-radius: 0;
         overflow: hidden;
+        border-bottom: 1px solid #F0F0F0;
 
         .el-badge {
           top: 4px;
@@ -247,20 +239,24 @@
         }
 
         .conversation-detail {
-          width: calc(100% - 50px);
-          margin-left: 10px;
+          width: calc(100% - 58px);
+          margin-left: 12px;
 
           .detail-item {
             display: block;
           }
 
           .top-item {
-            height: 18px;
+            height: 22px;
+            font-size: 15px;
+            color: #191919;
           }
 
           .bottom-item {
-            height: 13px;
-            margin-top: 4px;
+            height: 18px;
+            margin-top: 2px;
+            font-size: 12px;
+            color: #8E8E93;
           }
         }
       }
@@ -270,8 +266,8 @@
       position: fixed;
       z-index: 1004;
       background-color: #fff;
-      border-radius: 5px;
-      // width: 100px;
+      border-radius: 6px;
+      box-shadow: 0 2px 12px rgba(0, 0, 0, .1);
     }
   }
 </style>

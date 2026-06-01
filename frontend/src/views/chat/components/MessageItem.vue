@@ -153,27 +153,26 @@
 
   .chat-area__message-item__com {
     display: flex;
-    width: 300px;
-    justify-content: space-between;
-    margin-bottom: 10px;
+    width: auto;
+    max-width: 70%;
+    justify-content: flex-start;
+    margin-bottom: 16px;
+    padding: 0 16px;
 
     .avatar {
-      margin-top: 10px;
+      margin-top: 18px;
+      flex-shrink: 0;
     }
 
     .message-info {
-      width: 250px;
-
-      &:hover {
-        .header .time {
-          opacity: 1;
-        }
-      }
+      max-width: calc(100% - 52px);
+      margin-left: 10px;
 
       .header {
         display: flex;
         overflow: hidden;
-        height: 14px;
+        height: 18px;
+        margin-bottom: 2px;
 
         .item {
           overflow: hidden;
@@ -183,10 +182,15 @@
         .name {
           padding: 0 5px;
           max-width: 50%;
+          font-size: 12px;
+          color: #8E8E93;
         }
 
         .time {
-          opacity: 0;
+          opacity: 0.6;
+          font-size: 11px;
+          color: #B0B0B0;
+          margin-left: 8px;
         }
       }
 
@@ -196,7 +200,7 @@
         top: 50%;
         transform: translateY(-50%);
         margin-right: 7px;
-        color: #409EFF;
+        color: #2DC100;
         font-size: 12px;
         cursor: pointer;
       }
@@ -210,19 +214,14 @@
       }
 
       .img-content {
-        /*min-height: 200px;*/
         position: relative;
-        margin-top: 5px;
+        margin-top: 3px;
         display: inline-block;
         width: 100%;
-        max-height: 900px;
-        max-width: 1300px;
-        text-align: center;
+        text-align: left;
 
         .message-wrapper {
           position: relative;
-          /*height: 200px;*/
-          // width: 100%;
           .is-read {
             @extend .is-read-style
           }
@@ -237,9 +236,7 @@
 
       .normal-content {
         position: relative;
-        margin-top: 5px;
         display: inline-block;
-        width: 100%;
         white-space: wrap;
         word-break: break-word;
 
@@ -247,24 +244,22 @@
           cursor: default;
           position: relative;
           display: inline-block;
-          border-radius: 10px;
-          padding: 10px;
-          background-color: hsla(201, 100%, 55%, 1);
+          border-radius: 6px;
+          padding: 10px 14px;
+          background-color: #FFFFFF;
+          color: #191919;
+          font-size: 14px;
+          line-height: 1.6;
+          box-shadow: 0 1px 2px rgba(0, 0, 0, .06);
 
           .is-read {
             @extend .is-read-style
           }
         }
 
+        /* Remove old-style triangle — WeChat style has no arrow */
         &::before {
-          content: "";
-          position: absolute;
-          right: 100%;
-          top: 7px;
-          width: 0px;
-          border-bottom: 5px solid transparent;
-          border-right: 5px solid hsla(201, 100%, 55%, 1);
-          border-top: 5px solid transparent;
+          display: none;
         }
       }
 
@@ -274,14 +269,13 @@
         }
 
         &::after {
-          content: "";
-          position: absolute;
-          left: 100%;
-          top: 7px;
-          width: 0px;
-          border-bottom: 5px solid transparent;
-          border-left: 5px solid hsla(149, 78%, 53%, 1);
-          border-top: 5px solid transparent;
+          display: none;
+        }
+
+        .message-wrapper {
+          background-color: #95EC69;
+          color: #000000;
+          box-shadow: none;
         }
       }
     }

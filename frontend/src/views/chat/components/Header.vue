@@ -127,20 +127,32 @@
   .chat-area__header {
     position: relative;
     box-sizing: border-box;
-    height: 60px;
+    height: 56px;
     padding: 0 20px;
-    line-height: 60px;
-    border-bottom: 1px solid #cccccc;
+    line-height: 56px;
+    background-color: #FFFFFF;
+    border-bottom: 1px solid #E6E6E6;
 
     .header-wrapper {
       display: flex;
       justify-content: space-between;
+
+      .header-title {
+        font-size: 16px;
+        font-weight: 600;
+        color: #191919;
+      }
 
       .header-operation {
         .operation-item {
           font-size: 20px;
           margin-left: 10px;
           cursor: pointer;
+          color: #8E8E93;
+
+          &:hover {
+            color: #2DC100;
+          }
         }
       }
     }

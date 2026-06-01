@@ -39,7 +39,9 @@ const UIMap = {
 
 const state = {
   deviceType: deviceMap[getDeviceType()],
-  currentUI: UIMap.conversation
+  currentUI: UIMap.conversation,
+  /** 桌面端左侧导航激活项: 'messages' | 'contacts' */
+  asideActive: 'messages'
 }
 
 if (state.deviceType === deviceMap.Mobile) {
@@ -50,12 +52,18 @@ if (state.deviceType === deviceMap.Mobile) {
 const mutations = {
   setCurrentUI(state, data) {
     state.currentUI = data
+  },
+  setAsideActive(state, data) {
+    state.asideActive = data
   }
 }
 
 const actions = {
   SET_CURRENT_UI({commit}, data) {
     commit('setCurrentUI', data)
+  },
+  SET_ASIDE_ACTIVE({commit}, data) {
+    commit('setAsideActive', data)
   }
 }
 

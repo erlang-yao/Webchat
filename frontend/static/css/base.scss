@@ -231,6 +231,7 @@ $level: (0, 1, 2, 3, 4, 5, 6, 7, 8);
 .operation-text {
   &:hover {
     background-color: $color-grey2;
+    color: $wechat-green;
   }
   display: inline-block;
   cursor: pointer;
@@ -265,22 +266,60 @@ $level: (0, 1, 2, 3, 4, 5, 6, 7, 8);
   transition: border-color .2s cubic-bezier(.645,.045,.355,1);
   width: 100%;
 }
-/* 美化滚动条 */
+/* Element UI 全局主色覆盖 — 微信绿 */
+.el-button--primary {
+  background-color: #2DC100 !important;
+  border-color: #2DC100 !important;
+}
+.el-button--primary:hover,
+.el-button--primary:focus {
+  background-color: #25A800 !important;
+  border-color: #25A800 !important;
+}
+.el-switch.is-checked .el-switch__core {
+  background-color: #2DC100 !important;
+  border-color: #2DC100 !important;
+}
+.el-slider__bar {
+  background-color: #2DC100 !important;
+}
+.el-tabs__active-bar {
+  background-color: #2DC100 !important;
+}
+.el-radio__input.is-checked + .el-radio__label {
+  color: #2DC100 !important;
+}
+.el-radio__input.is-checked .el-radio__inner {
+  border-color: #2DC100 !important;
+  background-color: #2DC100 !important;
+}
+.el-checkbox__input.is-checked + .el-checkbox__label {
+  color: #2DC100 !important;
+}
+.el-checkbox__input.is-checked .el-checkbox__inner {
+  border-color: #2DC100 !important;
+  background-color: #2DC100 !important;
+}
+.el-link.el-link--primary {
+  color: #2DC100 !important;
+}
+
+/* 美化滚动条 — WeChat 风格 */
 *::-webkit-scrollbar{
-width:4px;
-height:4px;
+width:5px;
+height:5px;
 }
 *::-webkit-scrollbar-track{
-background: #e9ebee;
-border-radius:2px;
+background: transparent;
+border-radius:0;
 }
 *::-webkit-scrollbar-thumb{
-background: #aaa;
-border-radius:2px;
+background: #C0C0C0;
+border-radius:3px;
 }
 *::-webkit-scrollbar-thumb:hover{
-background: #747474;
+background: #A0A0A0;
 }
 *::-webkit-scrollbar-corner{
-background: #f6f6f6;
+background: transparent;
 }
