@@ -137,9 +137,9 @@
     height: 100%;
 
     .conversation-list {
-      width: 30%;
-      border-right: 1px solid #cccccc;
-      background-color: var(--primary-bgcolor-4);
+      width: 280px;
+      border-right: 1px solid #E6E6E6;
+      background-color: #F7F7F7;
 
       &.mobile {
         position: absolute;
@@ -149,7 +149,8 @@
 
     .conversation-chat-area {
       position: relative;
-      width: 70%;
+      flex: 1;
+      background-color: #F5F5F5;
 
       &.mobile {
         // position: absolute;

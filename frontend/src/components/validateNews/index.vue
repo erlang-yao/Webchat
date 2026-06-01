@@ -203,7 +203,7 @@
 
         .nickname {
           font-size: 20px;
-          color: #3578E5;
+          color: #2DC100;
         }
       }
     }

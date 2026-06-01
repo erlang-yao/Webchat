@@ -49,11 +49,11 @@
   .group-desc-com {
     height: 100%;
     width: 100%;
-    border-left: 1px solid #cccccc;
+    border-left: 1px solid #E6E6E6;
 
     .notice {
       height: 50%;
-      border-bottom: 1px solid #cccccc;
+      border-bottom: 1px solid #E6E6E6;
     }
 
     .member {

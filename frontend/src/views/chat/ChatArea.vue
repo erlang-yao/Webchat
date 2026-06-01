@@ -698,15 +698,16 @@
     .history-msg-container {
       position: absolute;
       z-index: 1004;
-      height: calc(100% - 210px);
+      height: calc(100% - 206px);
       width: 100%;
     }
 
     .main {
       display: flex;
       position: relative;
-      height: calc(100% - 210px);
+      height: calc(100% - 206px);
       width: 100%;
+      background-color: #ECECEC;
 
       .message-list-container {
         position: relative;
@@ -740,14 +741,15 @@
       box-sizing: border-box;
       position: relative;
       height: 150px;
-      border-top: 1px solid #cccccc;
+      border-top: 1px solid #E6E6E6;
+      background-color: #FFFFFF;
 
       .tool {
         width: 100%;
-        height: 28px;
-        line-height: 28px;
+        height: 32px;
+        line-height: 32px;
         text-align: left;
-        background-color: rgba(0, 0, 0, 0.1);
+        background-color: #FFFFFF;
         padding: 0 10px;
         box-sizing: border-box;
 
@@ -790,11 +792,11 @@
         }
 
         .tool-item:hover {
-          background-color: rgba(255, 255, 255, 0.3);
+          background-color: rgba(0, 0, 0, 0.05);
         }
 
         .tool-item.active {
-          background-color: rgba(255, 255, 255, 0.3);
+          background-color: rgba(0, 0, 0, 0.05);
         }
 
         .tool-item.active .emoji-container {
@@ -816,19 +818,19 @@
 
         .export-btn {
           position: absolute;
-          top: 2px;
-          right: 80px;
+          top: 4px;
+          right: 85px;
           cursor: pointer;
           font-size: 18px;
-          color: #606266;
+          color: #8E8E93;
           transition: color 0.2s;
 
           &:hover {
-            color: #409eff;
+            color: #2DC100;
           }
 
           &.is-exporting {
-            color: #409eff;
+            color: #2DC100;
             cursor: not-allowed;
             opacity: 0.6;
           }
@@ -844,16 +846,16 @@
       .textarea {
         overflow-x: hidden;
         box-sizing: border-box;
-        height: calc(100% - 30px);
+        height: calc(100% - 36px);
         width: 100%;
         outline: none;
-        border: none;
-        padding: 0 10px;
         border: 0;
-        border-radius: 5px;
-        background-color: #e9ebee;
+        border-radius: 6px;
+        background-color: #F7F7F7;
         padding: 10px;
         resize: none;
+        font-size: 14px;
+        color: #191919;
 
         img {
           width: 50px;

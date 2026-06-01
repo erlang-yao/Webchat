@@ -244,9 +244,10 @@
     .wrapper {
       background-color: #fff;
       width: 400px;
-      opacity: .9;
+      opacity: .95;
       padding: 35px 20px 0;
-      border-radius: 5px;
+      border-radius: 12px;
+      box-shadow: 0 4px 24px rgba(0, 0, 0, .12);
 
       .login-form, .register-form {
         position: relative;
@@ -260,6 +261,17 @@
 
           .el-avatar {
             box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
+            border-radius: 12px;
+          }
+        }
+
+        .el-button--primary {
+          background-color: #2DC100;
+          border-color: #2DC100;
+
+          &:hover {
+            background-color: #25A800;
+            border-color: #25A800;
           }
         }
       }
@@ -277,6 +289,13 @@
 
       .login-btn {
         width: 100%;
+        background-color: #2DC100;
+        border-color: #2DC100;
+
+        &:hover {
+          background-color: #25A800;
+          border-color: #25A800;
+        }
       }
     }
   }

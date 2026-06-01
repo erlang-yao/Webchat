@@ -222,8 +222,9 @@
     width: 70%;
     padding: 20px;
     margin: 10px auto;
-    box-shadow: 0 1px 2px 0 #ffffff;
-    background-color: $primarybg;
+    box-shadow: 0 2px 12px rgba(0, 0, 0, .06);
+    background-color: #FFFFFF;
+    border-radius: 8px;
 
     .header {
       display: flex;
@@ -258,7 +259,12 @@
         margin: 10px 0;
 
         .isactive {
-          background-color: #cccccc;
+          background-color: #E0E0E0;
+          color: #191919;
+        }
+
+        .operation-text:hover {
+          color: #2DC100;
         }
       }
 
@@ -268,10 +274,10 @@
             display: flex;
             align-items: center;
             padding: 1.5rem 0;
-            border-top: 1px solid #cccccc;
+            border-top: 1px solid #ECECEC;
 
             &:last-child {
-              border-bottom: 1px solid #cccccc;
+              border-bottom: 1px solid #ECECEC;
             }
 
             .title {
@@ -304,10 +310,10 @@
             display: flex;
             align-items: center;
             padding: 1.5rem 0;
-            border-bottom: 1px solid #cccccc;
+            border-bottom: 1px solid #ECECEC;
 
             &:first-child {
-              border-top: 1px solid #cccccc;
+              border-top: 1px solid #ECECEC;
             }
 
             .title {

@@ -1,53 +1,76 @@
-// some color
-// @import './theme.scss';
-$primarycolor: #409EFF;
-// $primarycolor: var(--theme-primary);
-$primarycolor-1: #3578E5;
-$successcolor: #67C23A;
-$warningcolor: #E6A23C;
-$dangercolor: #F56C6C;
-$infocolor: #909399;
+// ==============================
+// WeChat-inspired color palette
+// ==============================
+
+// -- Primary accent
+$primarycolor: #2DC100;
+$primarycolor-1: #25A800;
+$successcolor: #2DC100;
+$warningcolor: #FA9D3B;
+$dangercolor: #FA5151;
+$infocolor: #8E8E93;
 
 $normalwhite: #ffffff;
 
-// some font color
+// -- WeChat specific colors
+$wechat-green: #2DC100;
+$wechat-green-light: #95EC69;       // own message bubble
+$wechat-bg: #ECECEC;               // chat area background
+$wechat-bg-light: #F7F7F7;         // conversation list bg
+$wechat-sidebar: #2E2E2E;          // dark sidebar
+$wechat-border: #E6E6E6;           // subtle dividers
+$wechat-text-primary: #191919;     // primary text
+$wechat-text-secondary: #8E8E93;   // secondary text
+
+// -- Reuse existing var infrastructure for theme compatibility
 $primaryfont: var(--primary-color-10);
 $normalfont: var(--primary-color-8);
 $secondaryfont: var(--primary-color-6);
 $seatfont: var(--primary-color-4);
 
-// bgcolor
 $primarybg: var(--primary-bgcolor-10);
 $normalbg: var(--primary-bgcolor-8);
 $secondarybg: var(--primary-bgcolor-6);
 $seatbg: var(--primary-bgcolor-4);
 
 // border
-$border1: #DCDFE6;
-$border2: #E4E7ED;
-$border3: #EBEEF5;
-$border4: #F2F6FC;
+$border1: #E6E6E6;
+$border2: #ECECEC;
+$border3: #F0F0F0;
+$border4: #F7F7F7;
 
 // box-shadow
 .basics-box-shadow {
-  box-shadow: 0 2px 4px rgba(0, 0, 0, .12), 0 0 6px rgba(0, 0, 0, .04);
+  box-shadow: 0 1px 3px rgba(0, 0, 0, .08);
 }
 
+// -- HSL color palette (preserved for component compatibility)
 $color-purple: hsla(230, 84%, 63%, 1);
 $color-salmon: hsla(359, 98%, 68%, 1);
 $color-green: hsla(149, 78%, 53%, 1);
 $color-blue: hsla(201, 100%, 55%, 1);
 $color-red: hsla(356, 86%, 55%, 1);
 $color-yellow: hsla(40, 100%, 66%, 1);
-$color-grey8: hsla(230, 11%, 19%, 1);
-$color-grey7: hsla(230, 10%, 30%, 1);
-$color-grey6: hsla(230, 9%, 45%, 1);
-$color-grey5: hsla(230, 8%, 60%, 1);
-$color-grey4: hsla(230, 7%, 75%, 1);
-$color-grey3: hsla(230, 7%, 84%, 1);
-$color-grey2: hsla(230, 7%, 92%, 1);
-$color-grey1: hsla(230, 7%, 97%, 1);
-$color-white: hsla(230, 7%, 100%, 1);
+
+// WeChat grey scale
+$color-grey8: hsla(0, 0%, 10%, 1);     // #1A1A1A
+$color-grey7: hsla(0, 0%, 20%, 1);     // #333
+$color-grey6: hsla(0, 0%, 40%, 1);     // #666
+$color-grey5: hsla(0, 0%, 56%, 1);     // #8E8E93
+$color-grey4: hsla(0, 0%, 72%, 1);     // #B8B8B8
+$color-grey3: hsla(0, 0%, 84%, 1);     // #D6D6D6
+$color-grey2: hsla(0, 0%, 93%, 1);     // #EDEDED
+$color-grey1: hsla(0, 0%, 96%, 1);     // #F5F5F5
+$color-white: hsla(0, 0%, 100%, 1);
+
+// -- Message bubble colors (WeChat-style)
+$bubble-self-bg: #95EC69;
+$bubble-self-text: #000000;
+$bubble-other-bg: #FFFFFF;
+$bubble-other-text: #191919;
+$bubble-radius: 6px;
+
+// Preserved for theme system compatibility
 $themeLight-color-body: hsla(230, 11%, 19%, 1);
 $themeLight-color-bodyDimmed: hsla(230, 40%, 19%, 0.6);
 $themeLight-color-background: hsla(230, 7%, 100%, 1);

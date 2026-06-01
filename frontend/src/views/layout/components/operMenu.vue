@@ -8,11 +8,6 @@
       </span>
       <el-dropdown-menu slot="dropdown">
         <el-dropdown-item>
-          <router-link to="/chat/setting" class="aside-menu-link">
-            <el-button type="text">个人设置</el-button>
-          </router-link>
-        </el-dropdown-item>
-        <el-dropdown-item>
           <el-badge
             :value="validateUnReadCount"
             :hidden="!validateUnReadCount">

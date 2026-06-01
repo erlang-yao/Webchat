@@ -270,7 +270,7 @@
 
   .user-menu-item {
     .link {
-      color: #3578E5;
+      color: #2DC100;
       text-decoration: none;
 
       &:hover {
@@ -290,7 +290,7 @@
     .el-header {
       display: flex;
       justify-content: space-between;
-      background-color: #3578E5;
+      background-color: #2E2E2E;
       color: $normalwhite;
       line-height: 60px;
 
@@ -328,11 +328,7 @@
           padding: 0 7px;
 
           &:hover {
-            background-color: #4267B2;
-          }
-
-          &:hover {
-            color: #2f2f2f;
+            background-color: #3A3A3A;
           }
         }
       }
