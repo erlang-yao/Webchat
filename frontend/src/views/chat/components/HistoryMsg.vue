@@ -56,10 +56,12 @@
 </template>
 
 <script>
+  // 历史聊天记录查询面板：支持按类型、关键词、日期筛选，并分页展示
   import msgItem from './HistoryMsgItem'
   import emptySvg from '@/SVGComponents/empty'
   import {debounce} from '@/utils'
 
+  // 前端展示文案与后端 type 参数的映射
   const typeTextToValue = {
     '全部': 'all',
     '图片': 'img',
@@ -99,6 +101,10 @@
       }
     },
     methods: {
+      /**
+       * 查询历史聊天记录
+       * 根据当前会话类型（单聊/群聊）调用不同接口，支持类型、关键词、日期组合筛选
+       */
       getHistoryMsg() {
         if (this.isLoading) return
         this.isLoading = true
@@ -107,25 +113,28 @@
           type: typeTextToValue[this.searchType],
           query: this.searchWord,
           date: this.searchDate,
-          pageIndex: this.pageIndex - 1,
+          pageIndex: this.pageIndex - 1, // 后端分页从 0 开始
           pageSize: this.pageSize
         }
+        // 群聊与单聊共用同一套筛选 UI，接口按会话类型区分
         const fetch = this.currentConversation.isGroup ? this.$http.getGroupHistoryMessages : this.$http.getSingleHistoryMessages
         fetch(params).then(res => {
-          // console.log('历史消息：', res)
           this.msgList = res.data.data.msgList
           this.total = res.data.data.total
           this.isLoading = false
         })
       },
+      // 切换消息类型（全部/图片/文件）时重置到第一页
       searchTypeChange() {
         this.pageIndex = 1
         this.getHistoryMsg()
       },
+      // 关键词搜索防抖，避免每次按键都请求后端
       searchWordChange: debounce(function () {
         this.pageIndex = 1
         this.getHistoryMsg()
       }, 500),
+      // 选择日期后按当天范围查询
       searchDateChange() {
         this.pageIndex = 1
         this.getHistoryMsg()
