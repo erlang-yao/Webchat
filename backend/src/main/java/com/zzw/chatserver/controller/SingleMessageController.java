@@ -46,10 +46,10 @@ public class SingleMessageController {
 
     /**
      * 获取单聊历史记录
+     * 支持按类型、关键词、日期筛选，返回分页结果 msgList 与 total
      */
     @PostMapping("/historyMessage")
     public R getSingleHistoryMessages(@RequestBody HistoryMsgRequestVo historyMsgVo) {
-        // System.out.println("查看历史消息的请求参数为：" + historyMsgVo);
         SingleHistoryResultVo singleHistoryMsg = singleMessageService.getSingleHistoryMsg(historyMsgVo);
         return R.ok().data("total", singleHistoryMsg.getTotal()).data("msgList", singleHistoryMsg.getMsgList());
     }

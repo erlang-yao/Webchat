@@ -34,7 +34,8 @@ public class FastDFSUtil {
     }
 
     /**
-     * 下载文件
+     * 从 FastDFS 下载文件，供历史记录文件下载等场景使用
+     * @param fileId FastDFS 文件标识，格式如 group1/M00/00/00/xxx
      */
     public static byte[] downloadFile(String fileId) throws IOException, MyException {
         return client1.download_file1(fileId);

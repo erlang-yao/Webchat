@@ -26,7 +26,8 @@ public class GroupMessageController {
     }
 
     /**
-     * 获取群历史消息
+     * 获取群聊历史记录
+     * 请求参数与单聊历史查询一致，返回分页结果 msgList 与 total
      */
     @PostMapping("/historyMessages")
     public R getGroupHistoryMessages(@RequestBody HistoryMsgRequestVo historyMsgRequestVo) {

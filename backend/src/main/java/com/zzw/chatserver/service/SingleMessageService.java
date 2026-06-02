@@ -60,38 +60,40 @@ public class SingleMessageService {
         mongoTemplate.updateMulti(query, update, "singlemessages");
     }
 
+    /**
+     * 分页查询单聊历史记录，支持按消息类型、关键词、日期筛选
+     * 筛选逻辑与群聊历史查询保持一致，便于前端复用同一套 UI
+     */
     public SingleHistoryResultVo getSingleHistoryMsg(HistoryMsgRequestVo historyMsgRequestVo) {
+        // cri1：必选条件（房间 id，以及可选的日期范围）
         Criteria cri1 = new Criteria();
         cri1.and("roomId").is(historyMsgRequestVo.getRoomId());
-        //若查询条件是全部，则模糊匹配 message 或者 fileRawName
-        //若查询条件不是全部，则设置搜索类型，并且模糊匹配 fileRawName
+        // cri2：type=all 时的关键词 OR 条件（匹配文本内容或文件名）
         Criteria cri2 = null;
         if (!historyMsgRequestVo.getType().equals("all")) {
-            //若查询类型是文件或图片，则模糊匹配原文件名
+            // 指定类型（img/file）时，按 messageType 过滤，并在 fileRawName 中模糊搜索
             cri1.and("messageType").is(historyMsgRequestVo.getType())
                     .and("fileRawName").regex(Pattern.compile("^.*" + historyMsgRequestVo.getQuery() + ".*$", Pattern.CASE_INSENSITIVE));
         } else {
+            // 全部类型时，关键词同时匹配 message 文本与 fileRawName
             cri2 = new Criteria().orOperator(Criteria.where("message").regex(Pattern.compile("^.*" + historyMsgRequestVo.getQuery() + ".*$", Pattern.CASE_INSENSITIVE)),
                     Criteria.where("fileRawName").regex(Pattern.compile("^.*" + historyMsgRequestVo.getQuery() + ".*$", Pattern.CASE_INSENSITIVE)));
         }
         if (historyMsgRequestVo.getDate() != null) {
+            // 按选定日期查询当天消息：[date, date+1)
             Calendar calendar = new GregorianCalendar();
             calendar.setTime(historyMsgRequestVo.getDate());
             calendar.add(Calendar.DATE, 1);
             Date tomorrow = calendar.getTime();
             cri1.and("time").gte(historyMsgRequestVo.getDate()).lt(tomorrow);
-            // System.out.println("today：" + historyMsgRequestVo.getDate() + "，tomorrow：" + tomorrow);
         }
-        // 创建查询对象
         Query query = new Query();
         if (cri2 != null) query.addCriteria(new Criteria().andOperator(cri1, cri2));
         else query.addCriteria(cri1);
-        // 统计总数
         long total = mongoTemplate.count(query, SingleMessageResultVo.class, "singlemessages");
-        // 设置分页
-        query.skip(historyMsgRequestVo.getPageIndex() * historyMsgRequestVo.getPageSize()); //页码
-        query.limit(historyMsgRequestVo.getPageSize()); //每页显示数量
-        List<SingleMessageResultVo> messageList = mongoTemplate.find(query, SingleMessageResultVo.class, "singlemessages"); //必须带上集合名称
+        query.skip(historyMsgRequestVo.getPageIndex() * historyMsgRequestVo.getPageSize());
+        query.limit(historyMsgRequestVo.getPageSize());
+        List<SingleMessageResultVo> messageList = mongoTemplate.find(query, SingleMessageResultVo.class, "singlemessages");
         return new SingleHistoryResultVo(messageList, total);
     }
 

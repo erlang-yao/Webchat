@@ -32,6 +32,7 @@
 </template>
 
 <script>
+  // 单条历史消息展示：文本/图片/语音/文件，文件类型支持下载
   import {formatDateToZH} from '@/utils'
   import '../../../../static/css/animation.scss'
   import picturePreview from '@/components/picturePreview'
@@ -49,6 +50,11 @@
       },
     },
     computed: {
+      /**
+       * 文件下载链接
+       * message 字段存的是 FastDFS 完整访问路径，需截取 group 开头的 fileId 传给下载接口
+       * fileName 用于服务端设置 Content-Disposition，保证下载时使用原始文件名
+       */
       download() {
         return "/api/sys/downloadFile?fileId=" + this.msgItem.message.slice(this.msgItem.message.indexOf('group')) + "&fileName=" + this.msgItem.fileRawName
       },
