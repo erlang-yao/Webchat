@@ -23,15 +23,15 @@ public class GroupMessageService {
     @Resource
     private MongoTemplate mongoTemplate;
 
+    /**
+     * 分页查询群聊历史记录，支持按消息类型、关键词、日期筛选
+     * 查询条件组装方式与单聊历史查询相同，仅 MongoDB 集合不同
+     */
     public GroupHistoryResultVo getGroupHistoryMessages(HistoryMsgRequestVo groupHistoryVo) {
-        // 创建复合查询对象
         Criteria cri1 = new Criteria();
         cri1.and("roomId").is(groupHistoryVo.getRoomId());
-        //若查询条件是全部，则模糊匹配 message 或者 fileRawName
-        //若查询条件不是全部，则设置搜索类型，并且模糊匹配 fileRawName
         Criteria cri2 = null;
         if (!groupHistoryVo.getType().equals("all")) {
-            //若查询类型是文件或图片，则模糊匹配原文件名
             cri1.and("messageType").is(groupHistoryVo.getType())
                     .and("fileRawName").regex(Pattern.compile("^.*" + groupHistoryVo.getQuery() + ".*$", Pattern.CASE_INSENSITIVE));
         } else {
@@ -43,18 +43,14 @@ public class GroupMessageService {
             calendar.setTime(groupHistoryVo.getDate());
             calendar.add(Calendar.DATE, 1);
             Date tomorrow = calendar.getTime();
-            // System.out.println("today：" + groupHistoryVo.getDate() + ", tomorrow：" + tomorrow);
             cri1.and("time").gte(groupHistoryVo.getDate()).lt(tomorrow);
         }
-        // 创建查询对象
         Query query = new Query();
-        if (cri2 != null) query.addCriteria(new Criteria().andOperator(cri1, cri2)); //最后两者是且的关系
+        if (cri2 != null) query.addCriteria(new Criteria().andOperator(cri1, cri2));
         else query.addCriteria(cri1);
-        // 统计总数
         long count = mongoTemplate.count(query, GroupMessageResultVo.class, "groupmessages");
-        // 设置分页
-        query.skip(groupHistoryVo.getPageIndex() * groupHistoryVo.getPageSize()); //页码
-        query.limit(groupHistoryVo.getPageSize()); //每页显示数量
+        query.skip(groupHistoryVo.getPageIndex() * groupHistoryVo.getPageSize());
+        query.limit(groupHistoryVo.getPageSize());
         List<GroupMessageResultVo> messageList = mongoTemplate.find(query, GroupMessageResultVo.class, "groupmessages");
         return new GroupHistoryResultVo(messageList, count);
     }
