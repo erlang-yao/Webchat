@@ -65,7 +65,8 @@
   const systemPictureMap = {
     abstract: require('./../../../static/image/theme/abstract.jpg'),
     city: require('./../../../static/image/theme/city.jpg'),
-    ocean: require('./../../../static/image/theme/ocean.jpg')
+    ocean: require('./../../../static/image/theme/ocean.jpg'),
+    black: require('./../../../static/image/theme/black.jpg')
   }
   const notifySoundMap = {
     default: require('./../../../static/audio/default.mp3'),

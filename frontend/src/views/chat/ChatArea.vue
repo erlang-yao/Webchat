@@ -26,66 +26,49 @@
       </div>
     </div>
     <div class="message-edit-container">
-      <div class="tool">
-         <span class="tool-item">
-           <i class="item iconfont icon-emoji" @click.stop="showEmojiCom = !showEmojiCom"></i>
-         </span>
-        <span class="tool-item">
-          <label for="upImg">
-            <i class="item el-icon-picture">
-              <input
-                id="upImg"
-                class="img-inp"
-                type="file"
-                title="选择图片"
-                accept="image/png, image/jpeg, image/gif, image/jpg"
-                @change="uploadImg">
-            </i>
-          </label>
-        </span>
-        <span class="tool-item">
-          <i class="item el-icon-folder" @click.stop="showUpFileCom = !showUpFileCom"/>
-          <transition name="fade">
-            <up-file
-              :visible="showUpFileCom"
-              v-watchMouse="showUpFileCom"
-              @handleSuccess="uploadFileSuccess"
-              class="upFileComponent"
-              @getStatus="getUploadResult"
-              @getLocalUrl="getLocalUrl"
-              :get-status="getUploadResult"
-              :get-local-url="getLocalUrl"/>
-          </transition>
-        </span>
-        <span class="tool-item" :class="{ active: isRecording }" @click.stop="toggleVoiceRecord">
-          <i class="item iconfont icon-yuyin" title="语音消息"/>
-        </span>
-        <!--        <span class="tool-item">-->
-        <!--          <i class="item iconfont icon-huaban"/>-->
-        <!--        </span>-->
-        <!--        <span class="tool-item">-->
-        <!--          <i class="item iconfont icon-shipin"/>-->
-        <!--        </span>-->
-        <!--        <span class="tool-item">-->
-        <!--          <i class="item el-icon-phone-outline"/>-->
-        <!--        </span>-->
-        <span class="tool-item"
-              :class="showHistoryMsg ? 'history-btn normal-font el-icon-caret-bottom' : 'history-btn normal-font el-icon-caret-top'"
-              @click="setShowHistoryMsg">历史记录
-        </span>
-        <span class="tool-item export-btn"
-              :class="{ 'is-exporting': isExporting }"
-              @click="exportChatHistory"
-              title="导出聊天记录">
-          <i class="item el-icon-download"/>
-        </span>
-      </div>
-      <div class="operation">
-        <el-button @click="send" type="success" size="small" round>发送</el-button>
-        <el-button @click="clean" type="danger" size="small" round>清空</el-button>
-      </div>
       <textarea ref="chatInp" class="textarea" v-model="messageText" maxlength="200" @input="scrollBottom = true"
                 @keydown.enter="send($event)"></textarea>
+      <div class="bottom-row">
+        <div class="tool-icons">
+          <span class="tool-item">
+            <i class="item iconfont icon-emoji" @click.stop="showEmojiCom = !showEmojiCom" title="表情"/>
+          </span>
+          <span class="tool-item">
+            <label for="upImg">
+              <i class="item el-icon-picture" title="图片">
+                <input
+                  id="upImg"
+                  class="img-inp"
+                  type="file"
+                  title="选择图片"
+                  accept="image/png, image/jpeg, image/gif, image/jpg"
+                  @change="uploadImg">
+              </i>
+            </label>
+          </span>
+          <span class="tool-item">
+            <i class="item el-icon-folder" @click.stop="showUpFileCom = !showUpFileCom" title="文件"/>
+            <transition name="fade">
+              <up-file
+                :visible="showUpFileCom"
+                v-watchMouse="showUpFileCom"
+                @handleSuccess="uploadFileSuccess"
+                class="upFileComponent"
+                @getStatus="getUploadResult"
+                @getLocalUrl="getLocalUrl"
+                :get-status="getUploadResult"
+                :get-local-url="getLocalUrl"/>
+            </transition>
+          </span>
+          <span class="tool-item" :class="{ active: isRecording }" @click.stop="toggleVoiceRecord">
+            <i class="item iconfont icon-yuyin" title="语音消息"/>
+          </span>
+        </div>
+        <div class="operation">
+          <el-button @click="send" type="success" size="small" round>发送</el-button>
+          <el-button @click="clean" type="danger" size="small" round>清空</el-button>
+        </div>
+      </div>
       <transition name="fade">
         <custom-emoji v-if="showEmojiCom" class="emoji-component" @addemoji="addEmoji"/>
       </transition>
@@ -676,6 +659,9 @@
       // console.log('chatArea created')
       document.addEventListener('click', this.handlerShowEmoji)
       this.getRecentMessages()
+      // 监听来自 settingPanel 的历史/导出事件
+      this.$eventBus.$on('toggleHistoryMsg', this.setShowHistoryMsg)
+      this.$eventBus.$on('exportChatHistory', this.exportChatHistory)
     },
     mounted() {
       this.watchWebRtcMsg() //执行 WebRtc 类型，添加到聊天消息
@@ -684,6 +670,8 @@
       // console.log('chatArea BeforeDestroy')
       document.removeEventListener('click', this.handlerShowEmoji)
       this.cancelVoiceRecord()
+      this.$eventBus.$off('toggleHistoryMsg', this.setShowHistoryMsg)
+      this.$eventBus.$off('exportChatHistory', this.exportChatHistory)
     },
   };
 </script>
@@ -743,114 +731,16 @@
       height: 150px;
       border-top: 1px solid #E6E6E6;
       background-color: #FFFFFF;
-
-      .tool {
-        width: 100%;
-        height: 32px;
-        line-height: 32px;
-        text-align: left;
-        background-color: #FFFFFF;
-        padding: 0 10px;
-        box-sizing: border-box;
-
-        .tool-item {
-          cursor: pointer;
-          display: inline-block;
-          height: 100%;
-          position: relative;
-
-          i {
-            padding: 0 5px;
-          }
-
-          .emoji-container {
-            width: 400px;
-            height: 260px;
-            position: absolute;
-            bottom: 30px;
-            left: 0;
-            z-index: 10;
-            transition: all 0.2s;
-            /*transform: scaleX(0);*/
-            /*opacity: 0;*/
-          }
-
-          input {
-            position: absolute;
-            left: 0;
-            top: 0;
-            width: 100%;
-            height: 100%;
-            opacity: 0;
-          }
-
-          .upFileComponent {
-            position: absolute;
-            left: 13px;
-            top: 2px;
-          }
-        }
-
-        .tool-item:hover {
-          background-color: rgba(0, 0, 0, 0.05);
-        }
-
-        .tool-item.active {
-          background-color: rgba(0, 0, 0, 0.05);
-        }
-
-        .tool-item.active .emoji-container {
-          transform: scaleX(1);
-          opacity: 1;
-        }
-
-        i {
-          margin: 0;
-        }
-
-        .history-btn {
-          height: 20px;
-          position: absolute;
-          top: 7px;
-          right: 5px;
-          cursor: pointer;
-        }
-
-        .export-btn {
-          position: absolute;
-          top: 4px;
-          right: 85px;
-          cursor: pointer;
-          font-size: 18px;
-          color: #8E8E93;
-          transition: color 0.2s;
-
-          &:hover {
-            color: #2DC100;
-          }
-
-          &.is-exporting {
-            color: #2DC100;
-            cursor: not-allowed;
-            opacity: 0.6;
-          }
-        }
-      }
-
-      .operation {
-        position: absolute;
-        bottom: 5px;
-        right: 2px;
-      }
+      display: flex;
+      flex-direction: column;
 
       .textarea {
-        overflow-x: hidden;
+        flex: 1;
         box-sizing: border-box;
-        height: calc(100% - 36px);
         width: 100%;
         outline: none;
         border: 0;
-        border-radius: 6px;
+        border-radius: 6px 6px 0 0;
         background-color: #F7F7F7;
         padding: 10px;
         resize: none;
@@ -862,9 +752,80 @@
         }
       }
 
+      .bottom-row {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        height: 36px;
+        padding: 0 10px;
+        background-color: #FFFFFF;
+
+        .tool-icons {
+          display: flex;
+          align-items: center;
+          gap: 2px;
+          flex: 1;
+
+          .tool-item {
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 32px;
+            height: 32px;
+            border-radius: 6px;
+            position: relative;
+
+            i {
+              font-size: 18px;
+              color: #8E8E93;
+              transition: color 0.15s;
+            }
+
+            &:hover {
+              background-color: rgba(0, 0, 0, 0.05);
+
+              i {
+                color: #2DC100;
+              }
+            }
+
+            &.active {
+              background-color: rgba(45, 193, 0, 0.08);
+
+              i {
+                color: #2DC100;
+              }
+            }
+
+            input {
+              position: absolute;
+              left: 0;
+              top: 0;
+              width: 100%;
+              height: 100%;
+              opacity: 0;
+            }
+
+            .upFileComponent {
+              position: absolute;
+              left: 13px;
+              top: -180px;
+            }
+          }
+        }
+
+        .operation {
+          display: flex;
+          align-items: center;
+          gap: 6px;
+        }
+      }
+
       .emoji-component {
         position: absolute;
-        bottom: 101%;
+        bottom: 40px;
+        left: 10px;
       }
 
       .voice-record-panel {

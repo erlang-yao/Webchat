@@ -16,6 +16,11 @@
         <i class="el-icon-notebook-2"/>
       </div>
     </div>
+    <div class="theme-toggle">
+      <div class="nav-item" @click="toggleDarkMode" :title="darkMode ? '切换浅色模式' : '切换深色模式'">
+        <span class="theme-char">{{ darkMode ? '☼' : '☾' }}</span>
+      </div>
+    </div>
     <div class="operation">
       <oper-menu @setShowTheme="setShowTheme"/>
     </div>
@@ -42,6 +47,9 @@
       },
       asideActive() {
         return this.$store.state.device.asideActive
+      },
+      darkMode() {
+        return this.$store.state.device.darkMode
       }
     },
     methods: {
@@ -50,6 +58,9 @@
         if (this.$route.path !== '/chat/home') {
           this.$router.push('/chat/home')
         }
+      },
+      toggleDarkMode() {
+        this.$store.dispatch('device/TOGGLE_DARK_MODE')
       }
     },
     components: {
@@ -103,7 +114,7 @@
         margin-top: 20px;
         font-size: 22px;
         cursor: pointer;
-        transition: color 0.2s;
+        transition: color 0.2s, background-color 0.2s;
         border-radius: 8px;
 
         &:hover {
@@ -120,6 +131,22 @@
 
     .about-list {
       margin-top: 150px;
+    }
+
+    .theme-toggle {
+      position: absolute;
+      bottom: 90px;
+
+      .nav-item {
+        margin-top: 0;
+      }
+
+      .theme-char {
+        font-size: 24px;
+        line-height: 1;
+        color: #FFD54F;
+        text-shadow: 0 0 6px rgba(255, 213, 79, 0.3);
+      }
     }
 
     .operation {

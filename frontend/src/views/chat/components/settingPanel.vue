@@ -10,10 +10,6 @@
         slot="reference"
         @click.stop="showBeiZhu"
         v-if="currentConversation.conversationType === conversationTypes.friend">修改备注</span>
-      <!--      <span-->
-      <!--        class="oper-item operation-text__danger"-->
-      <!--        v-if="currentConversation.conversationType === conversationTypes.friend">删除好友-->
-      <!--      </span>-->
       <span
         class="oper-item operation-text"
         @click.stop="showGroupInfo"
@@ -24,7 +20,9 @@
         v-if="currentConversation.conversationType === conversationTypes.group">
         {{ isHolderMsg }}
       </span>
-      <!-- 退出群聊这里，若是当前登录的用户，则显示解散群聊，否则显示退出群聊 -->
+      <!-- 通用操作 —— 历史记录 & 导出 -->
+      <span class="oper-item operation-text" @click.stop="toggleHistoryMsg">历史聊天记录</span>
+      <span class="oper-item operation-text" @click.stop="exportChat">导出聊天记录</span>
     </div>
 
   </div>
@@ -104,6 +102,12 @@
             currentConversation: this.currentConversation
           }
         })
+      },
+      toggleHistoryMsg() {
+        this.$eventBus.$emit('toggleHistoryMsg')
+      },
+      exportChat() {
+        this.$eventBus.$emit('exportChatHistory')
       }
     }
   }

@@ -63,7 +63,10 @@ const mutations = {
     state.onlineUser = data
   },
   setAllConversation(state, data) {
-    state.allConversation = [...state.allConversation, ...data]
+    // Deduplicate by roomId + id to prevent doubling on re-fetch
+    const existingIds = new Set(state.allConversation.map(item => item.roomId || item.id))
+    const newItems = data.filter(item => !existingIds.has(item.roomId || item.id))
+    state.allConversation = [...state.allConversation, ...newItems]
     // console.log("所有会话为：", state.allConversation)
   },
   setAllFriends(state, data) {

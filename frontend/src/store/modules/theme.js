@@ -24,7 +24,7 @@ const _initThemeCSSVariable = (color, bgColor) => {
 
 const state = {
   /**透明度 */
-  opacity: localStorageManager.getJson('theme-opacity') || 0.75,
+  opacity: localStorageManager.getJson('theme-opacity') || 0.85,
   /**模糊度，filter: blur(10px) */
   blur: localStorageManager.getJson('theme-blur') || 10,
   /**
