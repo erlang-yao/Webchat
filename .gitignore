@@ -34,6 +34,9 @@ yarn-error.log*
 .idea/
 .vscode/
 
+# Local startup scripts
+*.bat
+backend/uploads/voice/*.webm
 # Claude Code local config
 .claude/
 *.suo
