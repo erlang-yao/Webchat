@@ -41,7 +41,9 @@ const state = {
   deviceType: deviceMap[getDeviceType()],
   currentUI: UIMap.conversation,
   /** 桌面端左侧导航激活项: 'messages' | 'contacts' */
-  asideActive: 'messages'
+  asideActive: 'messages',
+  /** 暗黑模式 */
+  darkMode: false
 }
 
 if (state.deviceType === deviceMap.Mobile) {
@@ -55,6 +57,14 @@ const mutations = {
   },
   setAsideActive(state, data) {
     state.asideActive = data
+  },
+  toggleDarkMode(state) {
+    state.darkMode = !state.darkMode
+    if (state.darkMode) {
+      document.documentElement.setAttribute('data-theme', 'dark')
+    } else {
+      document.documentElement.removeAttribute('data-theme')
+    }
   }
 }
 
@@ -64,6 +74,9 @@ const actions = {
   },
   SET_ASIDE_ACTIVE({commit}, data) {
     commit('setAsideActive', data)
+  },
+  TOGGLE_DARK_MODE({commit}) {
+    commit('toggleDarkMode')
   }
 }
 

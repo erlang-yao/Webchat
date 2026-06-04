@@ -16,6 +16,7 @@
         <div class="theme-item">
           <p class="title">背景图片</p>
           <el-radio-group v-model="bgImg" size="small" @change="bgImgChange">
+            <el-radio label="black" border>暗夜</el-radio>
             <el-radio label="abstract" border>抽象</el-radio>
             <el-radio label="city" border>城市</el-radio>
             <el-radio label="ocean" border>海岸</el-radio>
@@ -83,7 +84,8 @@
   const systemPictureMap = {
     abstract: require('./../../../static/image/theme/abstract.jpg'),
     city: require('./../../../static/image/theme/city.jpg'),
-    ocean: require('./../../../static/image/theme/ocean.jpg')
+    ocean: require('./../../../static/image/theme/ocean.jpg'),
+    black: require('./../../../static/image/theme/black.jpg')
   }
   let isPlaying = false
   export default {
