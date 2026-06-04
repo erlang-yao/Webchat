@@ -20,10 +20,7 @@
           :currentConversation="currentConversation"
           :setLoading="setLoading"
           :set-current-conversation="setCurrentConversation"/>
-        <div class="no-conversation hor-ver-center" v-else>
-          <chat-svg width="400" height="300"/>
-          <p>聊天~打开心灵的窗户</p>
-        </div>
+        <div class="no-conversation" v-else></div>
       </div>
     </transition>
   </div>
@@ -34,8 +31,6 @@
   import ChatArea from '@/views/chat/ChatArea'
   import {SET_UNREAD_NEWS_TYPE_MAP} from '@/store/constants'
   import {saveRecentConversationToLocal} from '@/utils'
-  import partTitle from '@/components/partTitle'
-  import chatSvg from '@/SVGComponents/chat'
   export default {
     name: 'Home',
     data() {
@@ -120,9 +115,7 @@
     },
     components: {
       ConversationList,
-      ChatArea,
-      partTitle,
-      chatSvg
+      ChatArea
     }
   }
 </script>
@@ -158,7 +151,7 @@
       }
 
       .no-conversation {
-        text-align: center;
+        height: 100%;
       }
     }
   }

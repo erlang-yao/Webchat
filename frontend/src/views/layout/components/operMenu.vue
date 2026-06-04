@@ -17,36 +17,10 @@
           </el-badge>
         </el-dropdown-item>
         <el-dropdown-item>
-          <el-button type="text" @click="setShowTheme(true)">主题设置</el-button>
-        </el-dropdown-item>
-        <el-dropdown-item>
-          <el-button type="text" @click="showFeedBackDialog">反馈</el-button>
-          <!--          <router-link to="/chat/feedback" class="aside-menu-link">-->
-          <!--            <el-button type="text">反馈</el-button>-->
-          <!--          </router-link>-->
-        </el-dropdown-item>
-        <el-dropdown-item>
           <el-button type="text" @click="logout">退出登录</el-button>
         </el-dropdown-item>
       </el-dropdown-menu>
     </el-dropdown>
-    <el-dialog
-      title="反馈面板"
-      :visible.sync="showFeedBack"
-      width="60%">
-      <div v-loading="loading">
-        <el-input
-          type="textarea"
-          :rows="2"
-          placeholder="请输入反馈内容"
-          v-model="feedBackContent">
-        </el-input>
-      </div>
-      <span slot="footer" class="dialog-footer">
-      <el-button @click="showFeedBack = false">取 消</el-button>
-      <el-button type="primary" @click="feedBack">确 定</el-button>
-    </span>
-    </el-dialog>
   </div>
 </template>
 
@@ -56,9 +30,6 @@
   export default {
     data() {
       return {
-        showFeedBack: false,
-        loading: false,
-        feedBackContent: ''
       }
     },
     computed: {
@@ -99,29 +70,6 @@
       setShowTheme(flag) {
         this.$emit('setShowTheme', flag)
       },
-      showFeedBackDialog() {
-        this.showFeedBack = !this.showFeedBack
-      },
-      feedBack() {
-        if (this.feedBackContent === '') {
-          this.$message({type: 'error', message: '请输入反馈内容！'})
-        } else {
-          this.loading = true
-          this.$http.addFeedBack({
-            userId: this.userInfo.uid,
-            username: this.userInfo.username,
-            feedBackContent: this.feedBackContent
-          }).then(res => {
-            this.loading = false
-            this.showFeedBack = false
-            this.feedBackContent = ''
-            this.$alert('感谢您的反馈！', '提示', {
-              confirmButtonText: '确定',
-              type: 'success'
-            })
-          })
-        }
-      }
     },
   }
 </script>

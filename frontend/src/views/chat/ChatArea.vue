@@ -832,13 +832,14 @@
         position: absolute;
         left: 10px;
         right: 10px;
-        bottom: 10px;
+        bottom: 48px;
         display: flex;
         align-items: center;
         padding: 8px 12px;
         background: rgba(0, 0, 0, 0.75);
         color: #fff;
         border-radius: 6px;
+        box-shadow: 0 4px 14px rgba(0, 0, 0, 0.12);
         z-index: 20;
 
         .record-dot {

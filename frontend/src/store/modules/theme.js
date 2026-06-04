@@ -33,13 +33,13 @@ const state = {
    * 区分系统自带和用户自定义判断是否包含base64
    * */
   //背景种类名称，若是自定义，则为 customBgImgUrl
-  bgImg: localStorageManager.getStr('theme-bgimg') || 'abstract',
+  bgImg: 'black',
   notifySound: localStorageManager.getStr('theme-notifysound') || 'default',
   // isNotifySound: localStorageManager.get('theme-blur') || 10
   /**字体颜色 #000 */
   color: localStorageManager.getStr('theme-color') || '#000',
   /**背景颜色 #fff */
-  bgColor: localStorageManager.getStr('theme-bgcolor') || '#fff',
+  bgColor: '#000',
   /**自定义的背景图访问链接 */
   customBgImgUrl: localStorageManager.getStr('theme-custombgimgurl') || ''
 }
