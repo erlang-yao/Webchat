@@ -47,16 +47,6 @@
               </el-badge>
             </el-dropdown-item>
             <el-dropdown-item class="user-menu-item">
-              <router-link to="/setting" class="link">
-                主题设置
-              </router-link>
-            </el-dropdown-item>
-            <el-dropdown-item class="user-menu-item">
-              <router-link to="/setting" class="link">
-                反馈
-              </router-link>
-            </el-dropdown-item>
-            <el-dropdown-item class="user-menu-item">
               <a class="link" @click="logout">
                 退出
               </a>
@@ -138,9 +128,7 @@
       }),
       coVideoWebRtcType() {
         let res = null
-        if (this.isVideoing) {
-          res = WEB_RTC_MSG_TYPE.video
-        } else if (this.isAudioing) {
+        if (this.isAudioing) {
           res = WEB_RTC_MSG_TYPE.audio
         }
         return res
@@ -178,17 +166,17 @@
         // 收到了对方的请求
         // console.log('收到协作请求：', data)
         const webRtcType = data.webRtcType
+        if (webRtcType === WEB_RTC_MSG_TYPE.artBoard || webRtcType === WEB_RTC_MSG_TYPE.video) {
+          this.$socket.emit('reply', {...data, type: coArtBoardReplyTypes.disagree})
+          return
+        }
         if (this.isToCoArtBoard || this.isVideoing || this.isAudioing) {
           this.$socket.emit('reply', {...data, type: coArtBoardReplyTypes.busy})
           return
         } else {
           let text = ''
-          if (webRtcType === WEB_RTC_MSG_TYPE.artBoard) {
-            text = '白板协作'
-          } else if (webRtcType === WEB_RTC_MSG_TYPE.audio) {
+          if (webRtcType === WEB_RTC_MSG_TYPE.audio) {
             text = '语音通话'
-          } else if (webRtcType === WEB_RTC_MSG_TYPE.video) {
-            text = '视频通话'
           }
           this.$confirm(`您的好友${data.myNickname}请求与你进行${text}, 是否同意?`, "提示", {
             confirmButtonText: "同意",
@@ -198,12 +186,8 @@
             console.log('ok')
             this.webRTCState = 'reply'
             this.$store.dispatch('app/SET_CURRENT_CONVERSATION', data)
-            if (webRtcType === WEB_RTC_MSG_TYPE.artBoard) {
-              this.$store.dispatch('app/SET_ISTOCOARTBOARD', true)
-            } else if (webRtcType === WEB_RTC_MSG_TYPE.audio) {
+            if (webRtcType === WEB_RTC_MSG_TYPE.audio) {
               this.$store.dispatch('app/SET_IS_AUDIOING', true)
-            } else if (webRtcType === WEB_RTC_MSG_TYPE.video) {
-              this.$store.dispatch('app/SET_IS_VIDEOING', true)
             }
             setTimeout(() => {
               clearTimeout(timer)

@@ -133,8 +133,8 @@
           [MSG_TYPES.img]: '[图片]',
           [MSG_TYPES.file]: '[文件]',
           [MSG_TYPES.sys]: '[系统消息]',
-          [MSG_TYPES.artBoard]: '[白板协作]',
-          [MSG_TYPES.video]: '[视频通话]',
+          [MSG_TYPES.artBoard]: '',
+          [MSG_TYPES.video]: '',
           [MSG_TYPES.audio]: '[语音通话]',
           [MSG_TYPES.voice]: '[语音]',
         }

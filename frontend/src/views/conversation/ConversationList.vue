@@ -5,10 +5,6 @@
       :style="device === 'Mobile' ? {marginLeft: '50px'} : {}">
       <!--      <top-search/>-->
     </div>
-    <div class="todo">
-      <todo/>
-    </div>
-
     <!-- 消息模式：最近会话列表 -->
     <div v-if="asideActive === 'messages'" class="panel-body messages-panel">
       <recent-conversation-list
@@ -33,7 +29,6 @@
   import './../../../static/iconfont/iconfont.css'
   import recentConversationList from './RecentConversation'
   import contactsPanel from './ContactsPanel'
-  import todo from '@/components/todo'
   import topSearch from './TopSearch'
 
   export default {
@@ -68,7 +63,6 @@
     components: {
       recentConversationList,
       contactsPanel,
-      todo,
       topSearch
     },
   }
@@ -84,10 +78,6 @@
 
     .search {
       padding: 10px 10px 0;
-    }
-
-    .todo {
-      padding: 0 10px 5px;
     }
 
     .panel-body {

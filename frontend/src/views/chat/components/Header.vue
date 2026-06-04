@@ -10,14 +10,6 @@
         <div class="header-operation">
           <!-- 只作用于群聊 -->
           <span v-if="!currentConversation.isGroup">
-            <el-tooltip class="item" effect="dark" content="白板协作需要良好的网络环境" placement="top">
-              <i v-if="device !== 'Mobile'"
-                 class="operation-item iconfont icon-huaban"
-                 @click="enterArtBoard"></i>
-            </el-tooltip>
-            <el-tooltip class="item" effect="dark" content="视频通话需要良好的网络环境" placement="top">
-              <i class="operation-item iconfont icon-shipin" @click="videoCall"></i>
-            </el-tooltip>
             <el-tooltip class="item" effect="dark" content="语音通话需要良好的网络环境" placement="top">
               <i class="operation-item el-icon-phone-outline" @click="audioCall"></i>
             </el-tooltip>
@@ -78,16 +70,6 @@
       }
     },
     methods: {
-      enterArtBoard() {
-        if (this.isToCoArtBoard || this.isVideoing || this.isAudioing) return //同一个用户只局限于一个
-        this.$store.dispatch('app/SET_ISTOCOARTBOARD', true)
-        this.$eventBus.$emit('web_rtc_msg', {type: WEB_RTC_MSG_TYPE.artBoard})
-      },
-      videoCall() {
-        if (this.isToCoArtBoard || this.isVideoing || this.isAudioing) return
-        this.$store.dispatch('app/SET_IS_VIDEOING', true)
-        this.$eventBus.$emit('web_rtc_msg', {type: WEB_RTC_MSG_TYPE.video})
-      },
       audioCall() {
         if (this.isToCoArtBoard || this.isVideoing || this.isAudioing) return
         this.$store.dispatch('app/SET_IS_AUDIOING', true)

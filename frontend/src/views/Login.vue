@@ -1,23 +1,11 @@
 <template>
-  <div class="login-page" :style="'background-image: url('+ bgUrl +')'">
+  <div class="login-page">
     <div class="ceshi" style="'marginTop': '30px'">
       <el-alert :closable="false" show-icon title="测试账号密码" description="账号1：cc1218，密码1：123456 | 账号2：lt0623，密码2：123456"
                 type="success"/>
     </div>
-    <transition name="fade">
-      <avatar-choose
-        v-if="showChooseAvatar"
-        @close="setShowChooseAvatar(false)"
-        @choose="chooseAvatar"
-      />
-    </transition>
     <div class="wrapper hor-ver-center" :style="device === 'Mobile' ? {width: '90%'}:{}">
       <el-form class="login-form" v-if="isLoginState">
-        <div class="avatar">
-          <el-avatar :size="100" :src="IMG_URL + loginInfo.avatar" @error="()=>true">
-            <img src="https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png"/>
-          </el-avatar>
-        </div>
         <el-form-item>
           <el-input autocomplete="new-password" v-model="loginInfo.username" prefix-icon="el-icon-user"
                     @keydown.enter="login" placeholder="请输入账号"></el-input>
@@ -38,15 +26,6 @@
         </el-form-item>
       </el-form>
       <el-form class="register-form" v-if="!isLoginState">
-        <div class="avatar" @click="setShowChooseAvatar(true)">
-          <img :src="avatar" alt="" srcset="" width="100" height="100" style="border-radius: 50%">
-          <!-- <el-avatar :size="100" :src="avatar">
-            <img src="https://cube.elemecdn.com/3/7c/3ea6beec64369c2642b92c6726f1epng.png" />
-          </el-avatar> -->
-          <span class="secondary-font" style="display: inline-block; margin-bottom: 5px">
-            点击头像切换头像
-          </span>
-        </div>
         <el-form-item>
           <el-input type="text" autocomplete="new-password" v-model="registerInfo.username" prefix-icon="el-icon-user"
                     placeholder="请输入账号"></el-input>
@@ -73,18 +52,14 @@
         </el-form-item>
       </el-form>
     </div>
-    <copy-right/>
   </div>
 </template>
 
 
 <script>
-  import ocean1 from './../../static/image/ocean1.jpg'
   import {createCanvas} from '@/utils/cvcode'
   import canvasImg from './../../static/image/canvas2.jpg'
   import {usernameReg, passwordReg} from '@/utils/index'
-  import avatarChoose from '@/components/avatarChoose'
-  import copyRight from '@/components/copyright'
 
   const faceRandom = Math.ceil(Math.random() * 10)
   export default {
@@ -107,17 +82,12 @@
         cvCode: '', // 验证码
         cvCodeIng: true, // 正在获取验证码？
         isLoginState: true,
-        bgUrl: ocean1,
-        showChooseAvatar: false,
         IMG_URL: process.env.IMG_URL
       }
     },
     computed: {
       device() {
         return this.$store.state.device.deviceType
-      },
-      avatar() {
-        return this.IMG_URL + this.registerInfo.avatar
       }
     },
     methods: {
@@ -205,16 +175,6 @@
         this.isLoginState = flag
         this.getCVCode()
       },
-      setShowChooseAvatar(flag) {
-        this.showChooseAvatar = flag
-      },
-      chooseAvatar(item) {
-        this.registerInfo.avatar = item
-      }
-    },
-    components: {
-      avatarChoose,
-      copyRight
     },
     async mounted() {
       this.getCVCode()
@@ -227,6 +187,7 @@
     @import "./../../static/css/animation.scss";
     @import "./../../static/css/var.scss";
     height: 100vh;
+    background: #fff;
     background-repeat: no-repeat;
     background-size: cover;
     transition: all .8s ease;

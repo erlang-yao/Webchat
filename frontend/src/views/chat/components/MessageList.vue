@@ -13,7 +13,7 @@
     <transition-group appear name="hro-scroll">
       <!-- <transition-group appear :name="useanimation ? 'hro-scroll' : ''"> -->
       <message-item
-        v-for="item in messagelist"
+        v-for="item in visibleMessageList"
         :key="item.time"
         :messageitem="item"
         :img-type-msg-list="imgTypeMsgList"
@@ -28,6 +28,7 @@
 <script>
   import messageItem from "./MessageItem"
   import {debounce} from '@/utils'
+  import {MSG_TYPES} from '@/const'
 
   export default {
     // props: ["messagelist", "scrollbottom", "hasmore", "isloading", "useanimation", "currentConversation"],
@@ -64,8 +65,13 @@
       }
     },
     computed: {
+      visibleMessageList() {
+        return (this.messagelist || []).filter(item => {
+          return item.messageType !== MSG_TYPES.artBoard && item.messageType !== MSG_TYPES.video
+        })
+      },
       imgTypeMsgList() {
-        return (this.messagelist || []).filter(item => item.messageType === 'img')
+        return this.visibleMessageList.filter(item => item.messageType === MSG_TYPES.img)
       }
     },
     methods: {
