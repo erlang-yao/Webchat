@@ -12,8 +12,8 @@
         type="recent"
       />
     </transition-group>
-    <div class="empty hor-ver-center" v-if="!outcomeConversationList.length">
-      <empty-svg width="200" height="200"/>
+    <div class="empty" v-if="!outcomeConversationList.length">
+      <img src="../../../static/image/empty_chat.jpg" class="empty-img" alt="暂无聊天"/>
       <span class="secondary-font">最近没有聊天好友</span>
     </div>
   </div>
@@ -23,7 +23,6 @@
   import {conversationTypes} from '@/const'
   import {arrUnique} from '@/utils'
   import conversationItem from './ConversationItem'
-  import EmptySvg from '@/SVGComponents/empty'
 
   export default {
     props: ['currentConversation', 'setCurrentConversation'],
@@ -187,8 +186,7 @@
       }
     },
     components: {
-      conversationItem,
-      EmptySvg
+      conversationItem
     },
     async created() {
       await this.getRecentConversation()
@@ -205,7 +203,18 @@
     overflow-x: hidden;
 
     .empty {
+      position: absolute;
+      top: 50%;
+      left: 50%;
+      transform: translate(-50%, -50%);
       text-align: center;
+
+      .empty-img {
+        width: 140px;
+        height: 140px;
+        object-fit: contain;
+        margin-bottom: 12px;
+      }
     }
   }
 </style>

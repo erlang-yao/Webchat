@@ -5,51 +5,61 @@
                 type="success"/>
     </div>
     <div class="wrapper hor-ver-center" :style="device === 'Mobile' ? {width: '90%'}:{}">
+      <div class="login-logo">WebChat</div>
       <el-form class="login-form" v-if="isLoginState">
-        <el-form-item>
-          <el-input autocomplete="new-password" v-model="loginInfo.username" prefix-icon="el-icon-user"
-                    @keydown.enter="login" placeholder="请输入账号"></el-input>
-        </el-form-item>
-        <el-form-item>
-          <el-input autocomplete="new-password" type="password" v-model="loginInfo.password" prefix-icon="el-icon-lock"
-                    placeholder="请输入密码"></el-input>
-        </el-form-item>
-        <el-form-item class="cv-code">
-          <el-input autocomplete="on" class="cv-code-inp" v-model="loginInfo.cvCode" @keydown.enter.native="login"
-                    prefix-icon="el-icon-lock" placeholder="验证码(不区分大小写)"></el-input>
-          <canvas v-show="!cvCodeIng" width="120" height="40" ref="loginCanvas" @click="getCVCode"></canvas>
-          <span style="width: 200px" v-show="cvCodeIng" @click="getCVCode">获取中...</span>
-        </el-form-item>
-        <el-form-item>
-          <el-button class="login-btn" type="primary" @click="login">登录</el-button>
-          <span>没有账号？<span class="operation-text" style="display: inline" @click="changeState(false)">注册</span></span>
-        </el-form-item>
+        <div class="form-fields">
+          <el-form-item>
+            <el-input autocomplete="new-password" v-model="loginInfo.username" prefix-icon="el-icon-user"
+                      @keydown.enter="login" placeholder="请输入账号"></el-input>
+          </el-form-item>
+          <el-form-item>
+            <el-input autocomplete="new-password" type="password" v-model="loginInfo.password" prefix-icon="el-icon-lock"
+                      placeholder="请输入密码"></el-input>
+          </el-form-item>
+          <el-form-item class="cv-code">
+            <el-input autocomplete="on" class="cv-code-inp" v-model="loginInfo.cvCode" @keydown.enter.native="login"
+                      prefix-icon="el-icon-lock" placeholder="验证码(不区分大小写)"></el-input>
+            <canvas v-show="!cvCodeIng" width="120" height="44" ref="loginCanvas" @click="getCVCode"></canvas>
+            <span style="width: 200px" v-show="cvCodeIng" @click="getCVCode">获取中...</span>
+          </el-form-item>
+        </div>
+        <div class="form-bottom">
+          <el-form-item>
+            <el-button class="login-btn" type="primary" @click="login">登录</el-button>
+          </el-form-item>
+          <p style="text-align: center; margin: 0;">
+            <span>没有账号？<span class="operation-text" style="display: inline" @click="changeState(false)">注册</span></span>
+          </p>
+        </div>
       </el-form>
       <el-form class="register-form" v-if="!isLoginState">
-        <el-form-item>
-          <el-input type="text" autocomplete="new-password" v-model="registerInfo.username" prefix-icon="el-icon-user"
-                    placeholder="请输入账号"></el-input>
-          <!-- <span class="account-errinfo">{{ registerErrInfo.account }}</span> -->
-        </el-form-item>
-        <el-form-item>
-          <el-input type="text" autocomplete="new-password" onfocus="this.type = 'password'"
-                    v-model="registerInfo.password" prefix-icon="el-icon-lock" placeholder="请输入密码"></el-input>
-          <!-- <span class="password-errinfo">{{ registerErrInfo.password }}</span> -->
-        </el-form-item>
-        <el-form-item>
-          <el-input type="text" autocomplete="new-password" onfocus="this.type = 'password'"
-                    v-model="registerInfo.rePassword" prefix-icon="el-icon-lock" placeholder="请确认密码"></el-input>
-          <!-- <span class="password-errinfo">{{ errInfo.password }}</span> -->
-        </el-form-item>
-        <el-form-item class="cv-code">
-          <el-input class="cv-code-inp" v-model="registerInfo.cvCode" prefix-icon="el-icon-lock"
-                    placeholder="验证码(不区分大小写)"></el-input>
-          <canvas width="120" height="40" ref="registerCanvas" @click="getCVCode"></canvas>
-        </el-form-item>
-        <el-form-item class="oper">
-          <el-button class="login-btn" type="primary" @click="register">注册</el-button>
-          <span>已有账号？<span class="operation-text" style="display: inline" @click="changeState(true)">登录</span></span>
-        </el-form-item>
+        <div class="form-fields">
+          <el-form-item>
+            <el-input type="text" autocomplete="new-password" v-model="registerInfo.username" prefix-icon="el-icon-user"
+                      placeholder="请输入账号"></el-input>
+          </el-form-item>
+          <el-form-item>
+            <el-input type="text" autocomplete="new-password" onfocus="this.type = 'password'"
+                      v-model="registerInfo.password" prefix-icon="el-icon-lock" placeholder="请输入密码"></el-input>
+          </el-form-item>
+          <el-form-item>
+            <el-input type="text" autocomplete="new-password" onfocus="this.type = 'password'"
+                      v-model="registerInfo.rePassword" prefix-icon="el-icon-lock" placeholder="请确认密码"></el-input>
+          </el-form-item>
+          <el-form-item class="cv-code">
+            <el-input class="cv-code-inp" v-model="registerInfo.cvCode" prefix-icon="el-icon-lock"
+                      placeholder="验证码(不区分大小写)"></el-input>
+            <canvas width="120" height="44" ref="registerCanvas" @click="getCVCode"></canvas>
+          </el-form-item>
+        </div>
+        <div class="form-bottom">
+          <el-form-item>
+            <el-button class="login-btn" type="primary" @click="register">注册</el-button>
+          </el-form-item>
+          <p style="text-align: center; margin: 0;">
+            <span>已有账号？<span class="operation-text" style="display: inline" @click="changeState(true)">登录</span></span>
+          </p>
+        </div>
       </el-form>
     </div>
   </div>
@@ -203,22 +213,52 @@
     }
 
     .wrapper {
+      display: flex;
+      flex-direction: column;
       background-color: #fff;
-      width: 400px;
+      width: 420px;
+      height: 600px;
       opacity: .95;
-      padding: 35px 20px 0;
+      padding: 100px 36px 36px;
       border-radius: 12px;
       box-shadow: 0 4px 24px rgba(0, 0, 0, .12);
 
+      .login-logo {
+        text-align: center;
+        font-family: "Georgia", "Times New Roman", serif;
+        font-size: 32px;
+        font-weight: 700;
+        letter-spacing: 2px;
+        padding-bottom: 30px;
+        background: linear-gradient(135deg, #2DC100 0%, #00B4D8 100%);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+        background-clip: text;
+        user-select: none;
+      }
+
       .login-form, .register-form {
+        flex: 1;
+        display: flex;
+        flex-direction: column;
         position: relative;
+
+        .form-fields {
+          flex: 1;
+        }
+
+        .form-bottom {
+          flex-shrink: 0;
+          padding-bottom: 10px;
+        }
 
         .avatar {
           position: absolute;
           z-index: 1001;
-          top: -110px;
+          top: -120px;
+          left: 50%;
+          transform: translateX(-50%);
           text-align: center;
-          margin-bottom: 10px;
 
           .el-avatar {
             box-shadow: 0 2px 12px 0 rgba(0, 0, 0, 0.1);
@@ -226,9 +266,15 @@
           }
         }
 
+        .el-input__inner {
+          height: 44px;
+          line-height: 44px;
+        }
+
         .el-button--primary {
           background-color: #2DC100;
           border-color: #2DC100;
+          height: 44px;
 
           &:hover {
             background-color: #25A800;
@@ -248,8 +294,15 @@
         }
       }
 
+      .form-bottom {
+        .el-form-item {
+          margin-bottom: 12px;
+        }
+      }
+
       .login-btn {
         width: 100%;
+        height: 44px;
         background-color: #2DC100;
         border-color: #2DC100;
 

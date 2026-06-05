@@ -12,6 +12,10 @@
         v-if="currentConversation.conversationType === conversationTypes.friend">修改备注</span>
       <span
         class="oper-item operation-text"
+        @click.stop="viewFriendProfile"
+        v-if="currentConversation.conversationType === conversationTypes.friend">查看资料</span>
+      <span
+        class="oper-item operation-text"
         @click.stop="showGroupInfo"
         v-if="currentConversation.conversationType === conversationTypes.group">查看群资料</span>
       <span
@@ -20,9 +24,20 @@
         v-if="currentConversation.conversationType === conversationTypes.group">
         {{ isHolderMsg }}
       </span>
-      <!-- 通用操作 —— 历史记录 & 导出 -->
+      <!-- 通用操作 -->
       <span class="oper-item operation-text" @click.stop="toggleHistoryMsg">历史聊天记录</span>
       <span class="oper-item operation-text" @click.stop="exportChat">导出聊天记录</span>
+      <!-- 删除好友（置底） -->
+      <el-popover
+        v-if="currentConversation.conversationType === conversationTypes.friend"
+        placement="left" width="180" v-model="showDelPop">
+        <p style="font-size:13px;margin:0 0 8px;">删除好友后聊天记录也会被删除，是否继续？</p>
+        <div style="text-align: right;">
+          <el-button size="mini" @click="showDelPop = false">取消</el-button>
+          <el-button type="danger" size="mini" @click.stop="deleteFriend">确定</el-button>
+        </div>
+        <span slot="reference" class="oper-item operation-text__danger" @click.stop="()=>{}">删除好友</span>
+      </el-popover>
     </div>
 
   </div>
@@ -36,6 +51,7 @@
     data() {
       return {
         conversationTypes,
+        showDelPop: false
       }
     },
     computed: {
@@ -108,6 +124,34 @@
       },
       exportChat() {
         this.$eventBus.$emit('exportChatHistory')
+      },
+      async viewFriendProfile() {
+        const {data} = await this.$http.getUserInfo(this.currentConversation.id)
+        if (data.code === 2000) {
+          this.$eventBus.$emit('showUserProfile', {
+            show: true,
+            data: { friendInfo: data.data.userInfo }
+          })
+        }
+      },
+      async deleteFriend() {
+        const {data} = await this.$http.deleteGoodFriend({
+          userM: this.userInfo.uid,
+          userY: this.currentConversation.id,
+          roomId: this.currentConversation.roomId
+        })
+        if (data.code === 2000) {
+          this.$socket.emit('sendDelGoodFriend', this.currentConversation)
+          this.$eventBus.$emit('getMyFriends')
+          this.$store.dispatch('app/SET_ALL_FRIENDS', {
+            resource: this.currentConversation.id,
+            type: 'delete'
+          })
+          this.showDelPop = false
+          this.$message({type: 'success', message: '删除成功！'})
+        } else {
+          this.$message({type: 'error', message: data.message})
+        }
       }
     }
   }
@@ -127,6 +171,18 @@
       .oper-item {
         line-height: 20px;
         margin-top: 10px;
+      }
+
+      /* 让 el-popover 的 reference 包装层与 .oper-item 统一样式 */
+      .el-popover__reference {
+        display: block;
+        margin-top: 10px;
+
+        .oper-item {
+          display: block;
+          width: 100%;
+          margin-top: 0;
+        }
       }
     }
   }
