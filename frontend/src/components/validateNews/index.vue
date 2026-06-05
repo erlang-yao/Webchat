@@ -28,28 +28,27 @@
         </el-select>
       </div>
       <div class="counter">
+      
         <span>
           一共{{outComeList.length}}条记录
         </span>
       </div>
       <div class="validatenews-item" v-for="item in outComeList" :key="item.id">
-        <div class="apply-info">
+      <div class="apply-info">
           <span class="title">
             <el-tooltip class="item" effect="dark" content="点击查看用户信息" placement="top">
               <span class="nickname">
-                <a style="color: #606266" @click.prevent="lookUserInfo(item.senderId)">
-                  {{item.senderNickname.slice(0,10)}}
+                <a style="color: #606266" @click.prevent="lookUserInfo(item.senderId === userInfo.uid ? item.receiverId : item.senderId)">
+                  {{ item.senderId === userInfo.uid ? '我' : item.senderNickname.slice(0,10) }}
                 </a>
-                <!--                <router-link :to="`/user/${item.senderId}`" class="">-->
-                <!--                  {{item.senderNickname.slice(0,10)}}-->
-                <!--                </router-link>-->
               </span>
             </el-tooltip>
+            
             <span v-if="item.validateType === 0">
-              {{validateNewsTips.applyFriend}}
+              {{ item.senderId === userInfo.uid ? '发出的好友申请' : validateNewsTips.applyFriend }}
             </span>
             <span v-else-if="item.validateType === 1">
-              {{validateNewsTips.applyGroup}}：{{item.groupInfo && item.groupInfo.title}}
+              {{ item.senderId === userInfo.uid ? '发出的群聊申请' : validateNewsTips.applyGroup }}：{{item.groupInfo && item.groupInfo.title}}
             </span>
             <span class="time">
               {{item.time}}
@@ -61,13 +60,13 @@
             placement="left"
             width="300"
             trigger="click">
-            <div class="validate-popover-body" v-loading="isAdding">
+<div class="validate-popover-body" v-loading="isAdding">
               <div class="sender-info">
                 <el-avatar :size="60" :src="IMG_URL + item.senderAvatar" @error="()=>true">
                   <img src="https://cube.elemecdn.com/e/fd/0fc7d20532fdaf769a25683617711png.png"/>
                 </el-avatar>
                 <div class="info">
-                  <span class="nickname">{{item.senderNickname}}</span>
+                  <span class="nickname">{{ item.senderId === userInfo.uid ? '我发出的申请' : item.senderNickname }}</span>
                 </div>
               </div>
               <div class="addition">
@@ -76,24 +75,36 @@
                   <span>{{item.additionMessage}}</span>
                 </div>
               </div>
-              <div class="operation" v-if="item.status === 0">
-                <el-button type="success" plain size="small" @click="agreeValidate(item)">同意</el-button>
-                <el-button type="danger" plain size="small" @click="disagreeValidate(item)">拒绝</el-button>
+              
+              <div class="operation" v-if="item.senderId === userInfo.uid">
+                <el-tag type="info" v-if="item.status === 0">等待对方处理</el-tag>
+                <el-tag type="success" v-else-if="item.status === 1">对方已同意</el-tag>
+                <div v-else-if="item.status === 2">
+                  <span style="color: #F56C6C; margin-right: 10px; font-size: 14px;">对方已拒绝</span>
+                  <el-button type="primary" size="mini" plain @click="handleResend(item)">重新发送</el-button>
+                </div>
               </div>
-              <div class="operation" v-else-if="item.status === 1">
-                <el-tag type="success">已同意</el-tag>
+              
+              <div class="operation" v-else>
+                <div v-if="item.status === 0">
+                  <el-button type="success" plain size="small" @click="agreeValidate(item)">同意</el-button>
+                  <el-button type="danger" plain size="small" @click="disagreeValidate(item)">拒绝</el-button>
+                </div>
+                <div v-else-if="item.status === 1">
+                  <el-tag type="success">已同意</el-tag>
+                </div>
+                <div v-else-if="item.status === 2">
+                  <el-tag type="danger">已拒绝</el-tag>
+                  </div>
               </div>
-              <div class="operation" v-else-if="item.status === 2">
-                <el-tag type="danger">已拒绝</el-tag>
               </div>
-            </div>
             <el-button slot="reference" type="success">查看</el-button>
           </el-popover>
         </div>
       </div>
     </div>
   </div>
-</template>
+</template>\
 
 <script>
   import {SET_UNREAD_NEWS_TYPE_MAP} from '@/store/constants'
@@ -132,6 +143,35 @@
       }
     },
     methods: {
+      // 找个空位把这段完整贴进去，注意和上下方法之间要用逗号 , 隔开
+    handleResend(item) {
+      this.$prompt('请输入新的验证留言', '重新发送验证消息', {
+        confirmButtonText: '发送',
+        cancelButtonText: '取消',
+        inputValue: item.additionMessage || '你好，我想重新添加你' 
+      }).then(({ value }) => {
+      
+       const params = {
+         id: item._id || item.id, // 根据你们实际的 MongoDB 主键名来，通常是 _id 或 id
+         additionMessage: value
+       };
+
+      // 调用我们在 validate.js 中新增的接口
+       this.$http.resendValidateMessage(params).then(res => {
+         if (res.data.code === 2000) { 
+            this.$message.success('验证消息已重新发送！');
+          // 将状态重置为 0 (待处理)，页面会自动隐藏“重新发送”按钮
+            item.status = 0; 
+           item.additionMessage = value;
+          } else {
+           this.$message.error(res.data.message || '发送失败');
+          }
+       });
+
+     }).catch(() => {
+      // 点击取消
+     });
+   },
       async lookUserInfo(uid) {
         let friendInfo = {}
         await this.$http.getUserInfo(uid).then(res => {
