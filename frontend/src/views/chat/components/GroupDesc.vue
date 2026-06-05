@@ -26,9 +26,8 @@
             @keydown.esc.native="cancelEditNotice"
           />
           <div class="notice-edit-actions">
-            <el-button size="mini" type="primary" @click="saveNotice" :loading="savingNotice">保存</el-button>
             <el-button size="mini" @click="cancelEditNotice">取消</el-button>
-            <el-button size="mini" type="danger" @click="clearNotice" :disabled="!editNoticeText">清空</el-button>
+            <el-button size="mini" type="primary" @click="saveNotice" :loading="savingNotice">确定</el-button>
           </div>
         </div>
       </div>
@@ -108,10 +107,6 @@
         } finally {
           this.savingNotice = false
         }
-      },
-      async clearNotice() {
-        this.editNoticeText = ''
-        await this.saveNotice()
       },
       handleDocumentClick(e) {
         if (this.isEditingNotice) {
