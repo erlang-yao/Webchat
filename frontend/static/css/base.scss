@@ -436,12 +436,23 @@ background: transparent;
   .validatenews-com .filter { color: #CCC !important; }
   .validatenews-com .counter { color: #888 !important; }
   .validatenews-com .el-tag--info { background-color: #333 !important; color: #CCC !important; }
-  .add-page { background-color: #262626 !important; color: #CCC !important; }
-  .add-page .el-input__inner { background-color: #333 !important; color: #CCC !important; }
-  .add-page .el-select .el-input__inner { background-color: #333 !important; }
-  .custom-search-list { background-color: #262626 !important; }
-  .custom-search-list .user-item, .custom-search-list .group-item { border-color: #333 !important; }
-  .custom-search-list .primary-font { color: #E0E0E0 !important; }
+  .add-page { background-color: #1A1A1A !important; }
+  .add-page .search-header { background-color: #262626 !important; border-color: #333 !important; }
+  .add-page .search-input .el-input__inner { background-color: #333 !important; color: #CCC !important; border-color: #444 !important; }
+  .add-page .filter-tabs { background-color: #262626 !important; border-color: #333 !important; }
+  .add-page .filter-tab { color: #888 !important; }
+  .add-page .filter-tab:hover { color: #CCC !important; }
+  .add-page .filter-tab.active { color: #E0E0E0 !important; }
+  .add-page .result-list { background-color: #262626 !important; }
+  .add-page .result-item { border-color: #2A2A2A !important; }
+  .add-page .result-item:hover { background-color: #2D2D2D !important; }
+  .add-page .result-item .item-name { color: #E0E0E0 !important; }
+  .add-page .result-item .item-name:hover { color: #2DC100 !important; }
+  .add-page .result-item .item-detail { color: #888 !important; }
+  .add-page .section-label { color: #999 !important; background-color: #1A1A1A !important; }
+  .add-page .no-results { color: #888 !important; }
+  .add-page .no-input-hint { color: #666 !important; }
+  .add-page .no-input-hint p { color: #666 !important; }
   .schedule-page { background-color: #262626 !important; color: #CCC !important; }
   .todo-list { color: #CCC !important; }
 }
