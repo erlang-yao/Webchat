@@ -1,6 +1,7 @@
 // TODO: 成员3认领好友管理模块
 <template>
   <div class="fenzu-menu box-shadow1" :style="{'top': top + 'px', 'left': left + 'px'}">
+    <span class="menu-item operation-text" @click.stop="addFenZu">添加分组</span>
     <span class="menu-item operation-text" @click.stop="editFenZu">编辑分组</span>
     <el-popover placement="top" width="200" trigger="click" v-model="visible"
                 content="这是一段内容,这是一段内容,这是一段内容,这是一段内容。">
@@ -23,6 +24,11 @@
       }
     },
     methods: {
+      // 核心修复点：加上了被漏掉的 addFenZu 方法，用来发射信号给父组件
+      addFenZu() {
+        this.$emit('addFenZu')
+        this.$emit('close')
+      },
       deleteFenZu() {
         this.$emit('deleteFenZu')
         this.$emit('close')

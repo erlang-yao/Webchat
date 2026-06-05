@@ -22,7 +22,7 @@ export default {
     return request.post(`/api/user/preFetchUser`, data)
   },
   /**添加分组 */
-  addNewFenZu(data) {
+  addFenZu(data) {
     return request.post(`/api/user/addFenZu`, data)
   },
   /**修改好友所在的分组 */

@@ -1,4 +1,3 @@
-// TODO: 成员3认领好友管理模块
 <template>
   <div class="fenzu-conversation-list">
     <el-collapse v-model="activeFenZu">
@@ -25,10 +24,25 @@
         />
       </el-collapse-item>
     </el-collapse>
+    
     <fenzu-menu v-if="showMenu" :top="menuTop" :left="menuLeft"
                 @deleteFenZu="deleteFenZuItem" @close="closeFenZuMenu"
                 @editFenZu="setEditFenZu"
+                @addFenZu="handleAddGroup"
     />
+
+    <el-dialog
+      title="添加分组"
+      :visible.sync="addGroupDialogVisible"
+      width="30%"
+      append-to-body
+      @close="resetAddGroupForm">
+      <el-input v-model="newGroupName" placeholder="请输入新分组名称" maxlength="15" clearable></el-input>
+      <span slot="footer" class="dialog-footer">
+        <el-button size="small" @click="addGroupDialogVisible = false">取 消</el-button>
+        <el-button type="primary" size="small" @click="submitNewGroup">确 定</el-button>
+      </span>
+    </el-dialog>
   </div>
 </template>
 
@@ -50,7 +64,11 @@
         currClickFenZu: '', // 当前点击的分组
         currEditFenZu: '', // 当前编辑的分组
         currEditFenZuTo: '', // 被编辑分组的新名字
-        newFenZu: '' // 新添加分组的名称
+        newFenZu: '', // 新添加分组的名称
+        
+        // 3. 新增：控制弹窗和输入框的变量
+        addGroupDialogVisible: false, 
+        newGroupName: ''
       }
     },
     computed: {
@@ -73,12 +91,10 @@
         const conversationList = JSON.parse(JSON.stringify(this.friendsList)) //从全局取出刚刚请求得到的所有好友列表
         const offlineUsers = []
         const onlineUsers = []
-        // console.log("给会话列表加上分组1：", conversationList)
         conversationList.forEach(item => {
           item.beiZhu = this.beiZhu[item.id] ? this.beiZhu[item.id] : ''
           this.onlineUserIds.includes(item.id) ? onlineUsers.push(item) : offlineUsers.push(item)
         })
-        // console.log("会话列表中在线用户有：", onlineUsers)
         return [...onlineUsers, ...offlineUsers]
       },
       outcomeConversation() { // 根据分组来分类不同的好友
@@ -100,16 +116,14 @@
           })
         }
         if (conversationList.length) { //删除到最后，剩下的会话列表中的数据就是我的好友这个分组
-          res['我的好友'] = [...res['我的好友'], ...conversationList]
+          res['我的好友'] = [...(res['我的好友'] || []), ...conversationList]
         }
-        // console.log("分组后的列表为：", res)
         return res
       },
       fenZuOnlineUserNum() { // 计算每个分组的在线用户
         const res = {}
         const obj = this.outcomeConversation
         for (const key in obj) {
-          // console.log("计算每个分组的在线用户：", key, obj)
           if (obj.hasOwnProperty(key)) {
             let num = 0
             const itemIds = obj[key].map(item => item.id)
@@ -148,7 +162,6 @@
           saveMyFriendsToLocalStorage(saveLocalData)
           //重新更新一下分组人数的统计
           const uInfo = await this.$http.getUserInfo(this.userInfo.uid)
-          // console.log("获取所有的好友中当前登录的用户信息为：", uInfo.data.data.userInfo)
           this.$store.dispatch('user/LOGIN', uInfo.data.data.userInfo)
         }
       },
@@ -172,6 +185,54 @@
       closeFenZuMenu() {
         this.showMenu = false
       },
+      
+      // ================= 新增的方法开始 =================
+      
+      // 点击右键菜单中的“添加分组”打开弹窗
+      handleAddGroup() {
+        this.addGroupDialogVisible = true;
+      },
+      
+      // 弹窗关闭时清空输入框
+      resetAddGroupForm() {
+        this.newGroupName = '';
+      },
+      
+      // 提交新增的分组
+      async submitNewGroup() {
+        if (!this.newGroupName.trim()) {
+          return this.$message({ type: 'warning', message: '分组名称不能为空！' });
+        }
+        if (this.newGroupName === '我的好友') {
+          return this.$message({ type: 'warning', message: '不能与默认分组同名！' });
+        }
+
+        try {
+          // 注意：这里假设你的后端有一个 addFenZu 接口，参数结构参考了你上面的 editFenZu
+          // 如果你的后端接口名不叫 addFenZu，请自行修改！
+          const { data } = await this.$http.addFenZu({
+            fenZuName: this.newGroupName,
+            userId: this.userInfo.uid
+          });
+
+          if (data.code === 2000) {
+            // 重新获取用户信息，刷新前端 Vuex 状态和列表展示
+            const res = await this.$http.getUserInfo(this.userInfo.uid);
+            this.$store.dispatch('user/LOGIN', res.data.data.userInfo);
+            
+            this.$message({ type: 'success', message: '添加分组成功！' });
+            this.addGroupDialogVisible = false; // 关闭弹窗
+          } else {
+            this.$message({ type: 'error', message: data.message || '添加失败！' });
+          }
+        } catch (error) {
+          console.error(error);
+          this.$message({ type: 'error', message: '请求失败，请检查网络或后端接口！' });
+        }
+      },
+      
+      // ================= 新增的方法结束 =================
+
       async deleteFenZuItem() {
         if (this.currClickFenZu === '我的好友') {
           return this.$message({
