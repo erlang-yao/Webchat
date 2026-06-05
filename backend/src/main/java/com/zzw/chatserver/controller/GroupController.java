@@ -94,4 +94,14 @@ public class GroupController {
         groupService.quitGroup(requestVo);
         return R.ok().message("操作成功");
     }
+
+    /**
+     * 更新群公告
+     */
+    @PostMapping("/updateGroupNotice")
+    public R updateGroupNotice(@RequestBody UpdateGroupNoticeRequestVo requestVo) {
+        String userId = (String) SecurityContextHolder.getContext().getAuthentication().getPrincipal();
+        Group updatedGroup = groupService.updateGroupNotice(requestVo.getGroupId(), requestVo.getNotice(), userId);
+        return R.ok().data("groupInfo", updatedGroup).message("群公告更新成功");
+    }
 }

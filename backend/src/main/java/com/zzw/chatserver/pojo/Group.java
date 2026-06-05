@@ -17,6 +17,7 @@ public class Group {
     private String gid; //对应 groupId
     private String title = "";// 群名称
     private String desc = ""; //群描述
+    private String notice = ""; // 群公告
     private String img = "/img/zwsj5.png";//群图片
     private String code; //群号，唯一标识
     private Integer userNum = 1; // 群成员数量，避免某些情况需要多次联表查找，如搜索；所以每次加入一人，数量加一
