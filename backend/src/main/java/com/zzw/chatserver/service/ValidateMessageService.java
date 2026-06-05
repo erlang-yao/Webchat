@@ -20,6 +20,9 @@ import org.springframework.stereotype.Service;
 import javax.annotation.Resource;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
+import java.util.Date;
+import java.text.SimpleDateFormat;
 
 @Service
 public class ValidateMessageService {
@@ -55,7 +58,10 @@ public class ValidateMessageService {
                         "groupId",
                         "_id",
                         "groupList"
-                ), Aggregation.match(Criteria.where("receiverId").is(new ObjectId(userId)))
+                ), Aggregation.match(new Criteria().orOperator(
+                        Criteria.where("receiverId").is(new ObjectId(userId)),
+                        Criteria.where("senderId").is(new ObjectId(userId))
+                ))
         );
         List<ValidateMessageResultVo> validatemessages = mongoTemplate.aggregate(aggregation, "validatemessages", ValidateMessageResultVo.class).getMappedResults();
         // System.out.println("查询我的验证消息列表结果为：" + validatemessages);
@@ -85,5 +91,34 @@ public class ValidateMessageService {
             return validateMessageDao.save(validateMessage);
         // System.out.println("查到的验证消息为：" + res);
         return null;
+    }
+    /**
+     * 重新发送验证消息
+     * @param messageId 原始验证消息的 ID
+     * @param newAdditionMessage 用户输入的新验证留言
+     */
+    public void resendMessage(String messageId, String newAdditionMessage) {
+        // 1. 使用内置的 findById 找到原本那条被拒绝或未处理的验证消息
+        Optional<ValidateMessage> optionalMsg = validateMessageDao.findById(new ObjectId(messageId));
+
+        if (optionalMsg.isPresent()) {
+            ValidateMessage msg = optionalMsg.get();
+
+            // 2. 将状态重置为 0 (未处理/申请中)
+            msg.setStatus(0);
+
+            // 3. 更新为前端传过来的新验证留言
+            msg.setAdditionMessage(newAdditionMessage);
+
+            // 4. 更新发送时间为当前最新时间
+            SimpleDateFormat sdf = new SimpleDateFormat("yyyy-MM-dd HH:mm:ss");
+            msg.setTime(sdf.format(new Date()));
+
+            // 5. 直接调用内置的 save 方法完成数据库更新 (ID存在即为更新)
+            validateMessageDao.save(msg);
+
+            // 6. 实时推送给接收方
+
+        }
     }
 }
