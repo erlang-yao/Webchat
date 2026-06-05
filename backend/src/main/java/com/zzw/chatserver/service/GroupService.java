@@ -46,6 +46,24 @@ public class GroupService {
         return res.orElse(null);
     }
 
+    public Group updateGroupNotice(String groupId, String notice, String userId) {
+        Optional<Group> optionalGroup = groupDao.findById(new ObjectId(groupId));
+        if (!optionalGroup.isPresent()) {
+            throw new RuntimeException("群组不存在");
+        }
+        Group group = optionalGroup.get();
+        if (!group.getHolderUserId().toString().equals(userId)) {
+            throw new RuntimeException("只有群主才能编辑群公告");
+        }
+        Query query = new Query();
+        query.addCriteria(Criteria.where("_id").is(new ObjectId(groupId)));
+        Update update = new Update();
+        update.set("notice", notice);
+        mongoTemplate.updateFirst(query, update, Group.class);
+        group.setNotice(notice);
+        return group;
+    }
+
     public List<SearchGroupResponseVo> searchGroup(SearchRequestVo requestVo, String uid) {
         Aggregation aggregation = Aggregation.newAggregation(
                 Aggregation.lookup(

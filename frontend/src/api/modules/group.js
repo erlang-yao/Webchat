@@ -53,5 +53,11 @@ export default {
    */
   quitGroup(data) {
     return request.post(`/api/group/quitGroup`, data)
+  },
+  /**
+   * 更新群公告
+   */
+  updateGroupNotice(data) {
+    return request.post(`/api/group/updateGroupNotice`, data)
   }
 }
