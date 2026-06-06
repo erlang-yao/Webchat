@@ -2,6 +2,7 @@ package com.zzw.chatserver.service;
 
 import com.zzw.chatserver.pojo.vo.ExportRequestVo;
 import com.zzw.chatserver.utils.FastDFSUtil;
+import com.zzw.chatserver.utils.LocalFileUtil;
 import org.bson.Document;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -41,6 +42,9 @@ public class ChatExportService {
 
     @Value("${file.base-url:http://localhost:5555/chat}")
     private String fileBaseUrl;
+
+    @Value("${file.upload-dir:uploads}")
+    private String uploadDir;
 
     // ────────────────────────── 消息内部表示 ──────────────────────────
 
@@ -235,31 +239,40 @@ public class ChatExportService {
      * 下载媒体文件字节
      */
     private byte[] downloadMedia(String urlOrFileId) throws Exception {
-        if (urlOrFileId.startsWith("http://") || urlOrFileId.startsWith("https://")) {
+        if (urlOrFileId == null || urlOrFileId.trim().isEmpty()) {
+            return null;
+        }
+
+        String normalized = urlOrFileId.trim();
+        if (isDirectLocalPath(normalized)) {
+            return downloadFromLocalPath(normalized);
+        }
+
+        if (normalized.startsWith("http://") || normalized.startsWith("https://")) {
             // 本地文件 URL
-            if (urlOrFileId.contains("/uploads/")) {
-                return downloadFromLocal(urlOrFileId);
+            if (normalized.contains("/uploads/")) {
+                return downloadFromLocal(normalized);
             }
             // FastDFS 完整 URL（nginxHost + fileId）
-            String fileId = extractFastDfsFileId(urlOrFileId);
+            String fileId = extractFastDfsFileId(normalized);
             if (fileId != null) {
                 try {
                     return FastDFSUtil.downloadFile(fileId);
                 } catch (Exception e) {
                     // FastDFS 不可用时尝试 HTTP 下载
-                    return downloadViaHttp(urlOrFileId);
+                    return downloadViaHttp(normalized);
                 }
             }
             // 纯 HTTP 下载
-            return downloadViaHttp(urlOrFileId);
+            return downloadViaHttp(normalized);
         }
         // 纯 FastDFS fileId
-        return FastDFSUtil.downloadFile(urlOrFileId);
+        return FastDFSUtil.downloadFile(normalized);
     }
 
     /** 从本地磁盘读取文件 */
     private byte[] downloadFromLocal(String url) throws IOException {
-        // URL 格式: http://localhost:5555/chat/uploads/image/uuid.jpg
+        // URL 格式: https://webchat.beer/chat/uploads/image/uuid.jpg
         // 去掉 baseUrl 前缀得到相对路径
         String pathPart = url;
         // 尝试去掉 baseUrl
@@ -276,10 +289,40 @@ public class ChatExportService {
         // 去掉开头的 /
         if (pathPart.startsWith("/")) pathPart = pathPart.substring(1);
 
-        // 构建绝对路径：pathPart 格式为 "uploads/image/uuid.jpg"
-        // 解析到 user.dir 下，而非 uploadDir 下（避免重复 uploads 前缀）
-        Path localFile = Paths.get(System.getProperty("user.dir"), pathPart);
+        // 构建绝对路径：优先按配置的上传目录解析
+        Path uploadRoot = Paths.get(LocalFileUtil.resolveUploadDir(uploadDir)).toAbsolutePath().normalize();
+        String relativePath = pathPart;
+        if (relativePath.startsWith("uploads/")) {
+            relativePath = relativePath.substring("uploads/".length());
+        }
+        Path localFile = uploadRoot.resolve(relativePath).normalize();
+        if (!localFile.startsWith(uploadRoot)) {
+            throw new IOException("Invalid local file path");
+        }
         return Files.readAllBytes(localFile);
+    }
+
+    /** 直接本地绝对路径/相对 uploads 路径 */
+    private byte[] downloadFromLocalPath(String pathStr) throws IOException {
+        Path candidate = Paths.get(pathStr);
+        if (!candidate.isAbsolute()) {
+            Path uploadRoot = Paths.get(LocalFileUtil.resolveUploadDir(uploadDir)).toAbsolutePath().normalize();
+            candidate = uploadRoot.resolve(pathStr).normalize();
+        } else {
+            candidate = candidate.toAbsolutePath().normalize();
+        }
+
+        if (!Files.exists(candidate)) {
+            throw new IOException("Local file not found: " + pathStr);
+        }
+        return Files.readAllBytes(candidate);
+    }
+
+    private boolean isDirectLocalPath(String value) {
+        return value.startsWith("/")
+                || value.matches("^[A-Za-z]:[\\\\/].*")
+                || value.startsWith("uploads/")
+                || value.startsWith("uploads\\");
     }
 
     /** 通过 HTTP 下载文件 */
