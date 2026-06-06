@@ -1,102 +1,34 @@
 package com.zzw.chatserver.auth;
 
 import com.zzw.chatserver.utils.JwtUtils;
+import io.jsonwebtoken.Claims;
+import io.jsonwebtoken.JwtException;
 import org.junit.jupiter.api.Test;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.beans.factory.annotation.Autowired;
 
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 
-/**
- * 安全与认证测试
- */
-@SpringBootTest
-@AutoConfigureMockMvc
-public class SecurityTest {
+class SecurityTest {
 
-    @Autowired
-    private MockMvc mockMvc;
-
-    /**
-     * TC_AUTH_001: JWT Token验证
-     */
     @Test
-    public void testValidTokenAccess() throws Exception {
-        // 生成有效token
-        String token = JwtUtils.createJwt("testuser", "testuser");
+    void createdTokenContainsUserIdentity() {
+        String token = JwtUtils.createJwt("507f1f77bcf86cd799439011", "testuser");
 
-        // 使用有效token访问受保护资源
-        mockMvc.perform(get("/api/user/profile")
-                .header("Authorization", "Bearer " + token))
-                .andExpect(status().is2xxSuccessful());
+        Claims claims = JwtUtils.parseJwt(token);
+
+        assertEquals("507f1f77bcf86cd799439011", claims.getSubject());
+        assertEquals("testuser", claims.get("username"));
+        assertTrue(claims.getExpiration().getTime() > System.currentTimeMillis());
     }
 
-    /**
-     * TC_AUTH_002: 无效Token
-     */
     @Test
-    public void testInvalidTokenAccess() throws Exception {
-        // 使用无效token
-        mockMvc.perform(get("/api/user/profile")
-                .header("Authorization", "Bearer invalid_token"))
-                .andExpect(status().isUnauthorized());
+    void malformedTokenIsRejected() {
+        assertThrows(JwtException.class, () -> JwtUtils.parseJwt("invalid-token"));
     }
 
-    /**
-     * TC_AUTH_003: Token过期
-     */
     @Test
-    public void testExpiredTokenAccess() throws Exception {
-        // 生成有效的token
-        String token = JwtUtils.createJwt("testuser", "testuser");
-
-        // 使用token访问资源
-        mockMvc.perform(get("/api/user/profile")
-                .header("Authorization", "Bearer " + token))
-                .andExpect(status().is2xxSuccessful());
+    void tokenCannotBeCreatedWithoutUserId() {
+        assertThrows(IllegalArgumentException.class, () -> JwtUtils.createJwt(null, "testuser"));
     }
-
-    /**
-     * TC_AUTH_004: 未认证访问
-     */
-    @Test
-    public void testUnauthorizedAccess() throws Exception {
-        // 不提供token访问受保护资源
-        mockMvc.perform(get("/api/user/profile"))
-                .andExpect(status().isUnauthorized());
-    }
-
-    /**
-     * TC_AUTH_005: 缺少Authorization头
-     */
-    @Test
-    public void testMissingAuthorizationHeader() throws Exception {
-        mockMvc.perform(get("/api/user/profile"))
-                .andExpect(status().isUnauthorized());
-    }
-
-    /**
-     * TC_AUTH_006: 错误的Authorization格式
-     */
-    @Test
-    public void testInvalidAuthorizationFormat() throws Exception {
-        mockMvc.perform(get("/api/user/profile")
-                .header("Authorization", "invalid_format"))
-                .andExpect(status().isUnauthorized());
-    }
-
-    /**
-     * TC_PERMISSION_001: 访问公开端点
-     */
-    @Test
-    public void testAccessPublicEndpoint() throws Exception {
-        mockMvc.perform(post("/api/user/register")
-                .contentType("application/json")
-                .content("{\"username\": \"test\", \"password\": \"test123\", \"rePassword\": \"test123\"}"))
-                .andExpect(status().is2xxSuccessful());
-    }
-
 }

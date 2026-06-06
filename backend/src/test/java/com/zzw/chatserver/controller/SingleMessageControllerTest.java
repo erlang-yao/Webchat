@@ -1,209 +1,96 @@
 package com.zzw.chatserver.controller;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.zzw.chatserver.common.ResultEnum;
+import com.zzw.chatserver.pojo.vo.SingleHistoryResultVo;
+import com.zzw.chatserver.pojo.vo.SingleMessageResultVo;
+import com.zzw.chatserver.service.SingleMessageService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.context.SpringBootTest;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.MediaType;
+import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
-import static org.hamcrest.Matchers.*;
+import java.util.Collections;
 
-/**
- * SingleMessageController 集成测试
- */
-@SpringBootTest
-@AutoConfigureMockMvc
-public class SingleMessageControllerTest {
+import static org.hamcrest.Matchers.equalTo;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-    @Autowired
+@ExtendWith(MockitoExtension.class)
+class SingleMessageControllerTest {
+
+    @Mock
+    private SingleMessageService singleMessageService;
+
     private MockMvc mockMvc;
 
-    @Autowired
-    private ObjectMapper objectMapper;
-
-    private String userAToken;
-    private String userBToken;
-
     @BeforeEach
-    public void setUp() throws Exception {
-        // 注册两个测试用户
-        registerUser("usera", "password123");
-        registerUser("userb", "password123");
-
-        // 建立好友关系
-        userAToken = loginUser("usera", "password123");
-        userBToken = loginUser("userb", "password123");
-        establishFriendship();
+    void setUp() {
+        SingleMessageController controller = new SingleMessageController();
+        ReflectionTestUtils.setField(controller, "singleMessageService", singleMessageService);
+        mockMvc = MockMvcBuilders.standaloneSetup(controller).build();
     }
 
-    /**
-     * TC_MSG_SINGLE_001: 发送文本消息（通过REST接口）
-     */
     @Test
-    public void testSendTextMessage() throws Exception {
-        mockMvc.perform(post("/api/message/sendSingle")
-                .header("Authorization", "Bearer " + userAToken)
-                .contentType(MediaType.APPLICATION_JSON)
-                .content("{\"targetUserId\": \"userb\", \"content\": \"你好\", \"type\": \"text\"}"))
-                .andExpect(status().is2xxSuccessful())
-                .andExpect(jsonPath("$.code", equalTo(0)));
+    void getLastMessageReturnsServiceResult() throws Exception {
+        SingleMessageResultVo message = new SingleMessageResultVo();
+        message.setId("message-1");
+        message.setMessage("hello");
+        when(singleMessageService.getLastMessage("room-1")).thenReturn(message);
+
+        mockMvc.perform(get("/singleMessage/getLastMessage").param("roomId", "room-1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code", equalTo(ResultEnum.SUCCESS.getCode())))
+                .andExpect(jsonPath("$.data.singleLastMessage.message", equalTo("hello")));
     }
 
-    /**
-     * TC_MSG_SINGLE_002: 发送消息给非好友
-     */
     @Test
-    public void testSendMessageToNonFriend() throws Exception {
-        // 注册第三个用户（不是好友）
-        registerUser("userc", "password123");
+    void getRecentMessagesPassesPagination() throws Exception {
+        when(singleMessageService.getRecentMessage("room-1", 0, 20))
+                .thenReturn(Collections.emptyList());
 
-        mockMvc.perform(post("/api/message/sendSingle")
-                .header("Authorization", "Bearer " + userAToken)
-                .contentType(MediaType.APPLICATION_JSON)
-                .content("{\"targetUserId\": \"userc\", \"content\": \"你好\", \"type\": \"text\"}"))
-                .andExpect(status().isForbidden())
-                .andExpect(jsonPath("$.message", containsString("好友")));
+        mockMvc.perform(get("/singleMessage/getRecentSingleMessages")
+                        .param("roomId", "room-1")
+                        .param("pageIndex", "0")
+                        .param("pageSize", "20"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.recentMessage").isArray());
+
+        verify(singleMessageService).getRecentMessage("room-1", 0, 20);
     }
 
-    /**
-     * TC_MSG_SINGLE_004: 撤回消息
-     */
     @Test
-    public void testRecallMessage() throws Exception {
-        // 先发送消息
-        String response = mockMvc.perform(post("/api/message/sendSingle")
-                .header("Authorization", "Bearer " + userAToken)
-                .contentType(MediaType.APPLICATION_JSON)
-                .content("{\"targetUserId\": \"userb\", \"content\": \"你好\", \"type\": \"text\"}"))
-                .andReturn()
-                .getResponse()
-                .getContentAsString();
+    void markReadDelegatesToService() throws Exception {
+        mockMvc.perform(post("/singleMessage/isRead")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"roomId\":\"room-1\",\"userId\":\"user-a\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code", equalTo(ResultEnum.SUCCESS.getCode())));
 
-        String messageId = objectMapper.readTree(response).get("data").get("id").asText();
-
-        // 撤回消息
-        mockMvc.perform(post("/api/message/recall")
-                .header("Authorization", "Bearer " + userAToken)
-                .contentType(MediaType.APPLICATION_JSON)
-                .content("{\"messageId\": \"" + messageId + "\"}"))
-                .andExpect(status().is2xxSuccessful())
-                .andExpect(jsonPath("$.code", equalTo(0)));
+        verify(singleMessageService).userIsReadMessage(any());
     }
 
-    /**
-     * TC_MSG_SINGLE_006: 查询聊天历史
-     */
     @Test
-    public void testGetChatHistory() throws Exception {
-        // 先发送几条消息
-        mockMvc.perform(post("/api/message/sendSingle")
-                .header("Authorization", "Bearer " + userAToken)
-                .contentType(MediaType.APPLICATION_JSON)
-                .content("{\"targetUserId\": \"userb\", \"content\": \"消息1\", \"type\": \"text\"}"));
+    void historyReturnsMessagesAndTotal() throws Exception {
+        SingleMessageResultVo message = new SingleMessageResultVo();
+        message.setId("message-1");
+        when(singleMessageService.getSingleHistoryMsg(any()))
+                .thenReturn(new SingleHistoryResultVo(Collections.singletonList(message), 1L));
 
-        mockMvc.perform(post("/api/message/sendSingle")
-                .header("Authorization", "Bearer " + userAToken)
-                .contentType(MediaType.APPLICATION_JSON)
-                .content("{\"targetUserId\": \"userb\", \"content\": \"消息2\", \"type\": \"text\"}"));
-
-        // 查询聊天历史
-        mockMvc.perform(get("/api/message/history?targetUserId=userb&page=1&pageSize=10")
-                .header("Authorization", "Bearer " + userAToken)
-                .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().is2xxSuccessful())
-                .andExpect(jsonPath("$.code", equalTo(0)))
-                .andExpect(jsonPath("$.data", notNullValue()));
+        mockMvc.perform(post("/singleMessage/historyMessage")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"roomId\":\"room-1\",\"pageIndex\":0,\"pageSize\":20}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.total", equalTo(1)))
+                .andExpect(jsonPath("$.data.msgList[0].id", equalTo("message-1")));
     }
-
-    /**
-     * TC_MSG_SINGLE_007: 标记消息已读
-     */
-    @Test
-    public void testMarkMessageAsRead() throws Exception {
-        // 先发送消息
-        String response = mockMvc.perform(post("/api/message/sendSingle")
-                .header("Authorization", "Bearer " + userAToken)
-                .contentType(MediaType.APPLICATION_JSON)
-                .content("{\"targetUserId\": \"userb\", \"content\": \"你好\", \"type\": \"text\"}"))
-                .andReturn()
-                .getResponse()
-                .getContentAsString();
-
-        String messageId = objectMapper.readTree(response).get("data").get("id").asText();
-
-        // 标记已读
-        mockMvc.perform(post("/api/message/markAsRead")
-                .header("Authorization", "Bearer " + userBToken)
-                .contentType(MediaType.APPLICATION_JSON)
-                .content("{\"messageId\": \"" + messageId + "\"}"))
-                .andExpect(status().is2xxSuccessful())
-                .andExpect(jsonPath("$.code", equalTo(0)));
-    }
-
-    /**
-     * TC_MSG_SINGLE_008: 删除消息
-     */
-    @Test
-    public void testDeleteMessage() throws Exception {
-        // 先发送消息
-        String response = mockMvc.perform(post("/api/message/sendSingle")
-                .header("Authorization", "Bearer " + userAToken)
-                .contentType(MediaType.APPLICATION_JSON)
-                .content("{\"targetUserId\": \"userb\", \"content\": \"你好\", \"type\": \"text\"}"))
-                .andReturn()
-                .getResponse()
-                .getContentAsString();
-
-        String messageId = objectMapper.readTree(response).get("data").get("id").asText();
-
-        // 删除消息
-        mockMvc.perform(delete("/api/message/" + messageId)
-                .header("Authorization", "Bearer " + userAToken)
-                .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().is2xxSuccessful())
-                .andExpect(jsonPath("$.code", equalTo(0)));
-    }
-
-    // 辅助方法
-
-    private void registerUser(String username, String password) throws Exception {
-        mockMvc.perform(post("/api/user/register")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content("{\"username\": \"" + username + "\", \"password\": \"" + password + "\", \"rePassword\": \"" + password + "\"}"))
-                .andExpect(status().is2xxSuccessful());
-    }
-
-    private String loginUser(String username, String password) throws Exception {
-        String response = mockMvc.perform(post("/api/user/login")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content("{\"username\": \"" + username + "\", \"password\": \"" + password + "\"}"))
-                .andExpect(status().is2xxSuccessful())
-                .andReturn()
-                .getResponse()
-                .getContentAsString();
-
-        return objectMapper.readTree(response).get("data").get("token").asText();
-    }
-
-    private void establishFriendship() throws Exception {
-        // 发送好友请求
-        mockMvc.perform(post("/api/friend/add")
-                .header("Authorization", "Bearer " + userAToken)
-                .contentType(MediaType.APPLICATION_JSON)
-                .content("{\"targetUserId\": \"userb\", \"message\": \"加我好友\"}"))
-                .andExpect(status().is2xxSuccessful());
-
-        // 接受好友请求
-        mockMvc.perform(post("/api/friend/accept")
-                .header("Authorization", "Bearer " + userBToken)
-                .contentType(MediaType.APPLICATION_JSON)
-                .content("{\"validateId\": \"1\"}"))
-                .andExpect(status().is2xxSuccessful());
-    }
-
 }

@@ -2,6 +2,7 @@ package com.zzw.chatserver.service;
 
 import com.zzw.chatserver.pojo.vo.ExportRequestVo;
 import com.zzw.chatserver.utils.FastDFSUtil;
+import com.zzw.chatserver.utils.LocalFileUtil;
 import org.bson.Document;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -42,6 +43,9 @@ public class ChatExportService {
     @Value("${file.base-url:http://localhost:5555/chat}")
     private String fileBaseUrl;
 
+    @Value("${file.upload-dir:uploads}")
+    private String uploadDir;
+
     // ────────────────────────── 消息内部表示 ──────────────────────────
 
     private static class MsgInfo {
@@ -50,6 +54,7 @@ public class ChatExportService {
         String message;       // 文本内容或媒体 URL/fileId
         String messageType;   // text/img/file/voice/video/audio/sys/emoji
         String fileRawName;   // 媒体文件原始名称
+        String inlineDataUri; // 导出 HTML 内联数据，优先用于图片/语音
 
         boolean isMediaType() {
             return "img".equals(messageType) || "file".equals(messageType)
@@ -214,6 +219,9 @@ public class ChatExportService {
             return;
         }
 
+        // 图片/语音优先内联到 HTML，避免导出包外部路径失效
+        msg.inlineDataUri = buildInlineDataUri(msg, fileBytes);
+
         // 生成媒体文件名
         String ext = extractExt(msg);
         String ts = formatTimestamp(msg.time);
@@ -235,31 +243,40 @@ public class ChatExportService {
      * 下载媒体文件字节
      */
     private byte[] downloadMedia(String urlOrFileId) throws Exception {
-        if (urlOrFileId.startsWith("http://") || urlOrFileId.startsWith("https://")) {
+        if (urlOrFileId == null || urlOrFileId.trim().isEmpty()) {
+            return null;
+        }
+
+        String normalized = urlOrFileId.trim();
+        if (isDirectLocalPath(normalized)) {
+            return downloadFromLocalPath(normalized);
+        }
+
+        if (normalized.startsWith("http://") || normalized.startsWith("https://")) {
             // 本地文件 URL
-            if (urlOrFileId.contains("/uploads/")) {
-                return downloadFromLocal(urlOrFileId);
+            if (normalized.contains("/uploads/")) {
+                return downloadFromLocal(normalized);
             }
             // FastDFS 完整 URL（nginxHost + fileId）
-            String fileId = extractFastDfsFileId(urlOrFileId);
+            String fileId = extractFastDfsFileId(normalized);
             if (fileId != null) {
                 try {
                     return FastDFSUtil.downloadFile(fileId);
                 } catch (Exception e) {
                     // FastDFS 不可用时尝试 HTTP 下载
-                    return downloadViaHttp(urlOrFileId);
+                    return downloadViaHttp(normalized);
                 }
             }
             // 纯 HTTP 下载
-            return downloadViaHttp(urlOrFileId);
+            return downloadViaHttp(normalized);
         }
         // 纯 FastDFS fileId
-        return FastDFSUtil.downloadFile(urlOrFileId);
+        return FastDFSUtil.downloadFile(normalized);
     }
 
     /** 从本地磁盘读取文件 */
     private byte[] downloadFromLocal(String url) throws IOException {
-        // URL 格式: http://localhost:5555/chat/uploads/image/uuid.jpg
+        // URL 格式: https://webchat.beer/chat/uploads/image/uuid.jpg
         // 去掉 baseUrl 前缀得到相对路径
         String pathPart = url;
         // 尝试去掉 baseUrl
@@ -276,10 +293,67 @@ public class ChatExportService {
         // 去掉开头的 /
         if (pathPart.startsWith("/")) pathPart = pathPart.substring(1);
 
-        // 构建绝对路径：pathPart 格式为 "uploads/image/uuid.jpg"
-        // 解析到 user.dir 下，而非 uploadDir 下（避免重复 uploads 前缀）
-        Path localFile = Paths.get(System.getProperty("user.dir"), pathPart);
+        // 构建绝对路径：优先按配置的上传目录解析
+        Path uploadRoot = Paths.get(LocalFileUtil.resolveUploadDir(uploadDir)).toAbsolutePath().normalize();
+        String relativePath = pathPart;
+        if (relativePath.startsWith("uploads/")) {
+            relativePath = relativePath.substring("uploads/".length());
+        }
+        Path localFile = uploadRoot.resolve(relativePath).normalize();
+        if (!localFile.startsWith(uploadRoot)) {
+            throw new IOException("Invalid local file path");
+        }
         return Files.readAllBytes(localFile);
+    }
+
+    /** 直接本地绝对路径/相对 uploads 路径 */
+    private byte[] downloadFromLocalPath(String pathStr) throws IOException {
+        Path uploadRoot = Paths.get(LocalFileUtil.resolveUploadDir(uploadDir)).toAbsolutePath().normalize();
+        Path candidate = resolveLocalCandidate(pathStr, uploadRoot);
+        if (candidate != null && Files.exists(candidate)) {
+            return Files.readAllBytes(candidate);
+        }
+
+        throw new IOException("Local file not found: " + pathStr);
+    }
+
+    private boolean isDirectLocalPath(String value) {
+        return value.startsWith("/")
+                || value.matches("^[A-Za-z]:[\\\\/].*")
+                || value.startsWith("uploads/")
+                || value.startsWith("uploads\\");
+    }
+
+    private Path resolveLocalCandidate(String pathStr, Path uploadRoot) {
+        String normalized = pathStr.replace('\\', '/');
+        if (normalized.startsWith("/www/wwwroot/uploads/")) {
+            String relative = normalized.substring("/www/wwwroot/uploads/".length());
+            Path fallback = uploadRoot.resolve(relative).normalize();
+            if (fallback.startsWith(uploadRoot)) {
+                return fallback;
+            }
+        }
+
+        int uploadsIndex = normalized.indexOf("/uploads/");
+        if (uploadsIndex >= 0) {
+            String relative = normalized.substring(uploadsIndex + "/uploads/".length());
+            Path fallback = uploadRoot.resolve(relative).normalize();
+            if (fallback.startsWith(uploadRoot)) {
+                return fallback;
+            }
+        }
+
+        Path candidate = Paths.get(pathStr);
+        if (!candidate.isAbsolute()) {
+            return uploadRoot.resolve(pathStr).normalize();
+        }
+
+        candidate = candidate.toAbsolutePath().normalize();
+        if (Files.exists(candidate)) {
+            return candidate;
+        }
+
+        return candidate;
     }
 
     /** 通过 HTTP 下载文件 */
@@ -463,10 +537,14 @@ public class ChatExportService {
 
                 switch (msg.messageType) {
                     case "img":
-                        sb.append("<br><img src=\"").append(relPath).append("\" alt=\"图片\" loading=\"lazy\">");
+                        sb.append("<br><img src=\"")
+                                .append(escapeHtml(msg.inlineDataUri != null ? msg.inlineDataUri : relPath))
+                                .append("\" alt=\"图片\" loading=\"lazy\">");
                         break;
                     case "voice":
-                        sb.append("<audio src=\"").append(relPath).append("\" controls preload=\"none\"></audio>");
+                        sb.append("<audio src=\"")
+                                .append(escapeHtml(msg.inlineDataUri != null ? msg.inlineDataUri : relPath))
+                                .append("\" controls preload=\"none\"></audio>");
                         break;
                     case "video":
                         sb.append("<video src=\"").append(relPath).append("\" controls preload=\"none\"></video>");
@@ -531,6 +609,65 @@ public class ChatExportService {
         if (text == null) return "";
         return text.replace("&", "&amp;").replace("<", "&lt;")
                 .replace(">", "&gt;").replace("\"", "&quot;");
+    }
+
+    /** 将图片/语音转成 data URI，便于导出 HTML 直接打开 */
+    private String buildInlineDataUri(MsgInfo msg, byte[] content) {
+        if (msg == null || content == null || content.length == 0) {
+            return null;
+        }
+        if (!"img".equals(msg.messageType) && !"voice".equals(msg.messageType)) {
+            return null;
+        }
+
+        String mimeType;
+        String ext = extractExt(msg);
+        if ("img".equals(msg.messageType)) {
+            mimeType = guessImageMimeType(ext);
+        } else {
+            mimeType = guessAudioMimeType(ext);
+        }
+        return "data:" + mimeType + ";base64," + Base64.getEncoder().encodeToString(content);
+    }
+
+    private String guessImageMimeType(String ext) {
+        if (ext == null) {
+            return "image/jpeg";
+        }
+        switch (ext.toLowerCase()) {
+            case "png":
+                return "image/png";
+            case "gif":
+                return "image/gif";
+            case "webp":
+                return "image/webp";
+            case "bmp":
+                return "image/bmp";
+            case "svg":
+            case "svgz":
+                return "image/svg+xml";
+            default:
+                return "image/jpeg";
+        }
+    }
+
+    private String guessAudioMimeType(String ext) {
+        if (ext == null) {
+            return "audio/webm";
+        }
+        switch (ext.toLowerCase()) {
+            case "mp3":
+                return "audio/mpeg";
+            case "ogg":
+                return "audio/ogg";
+            case "wav":
+                return "audio/wav";
+            case "m4a":
+            case "aac":
+                return "audio/aac";
+            default:
+                return "audio/webm";
+        }
     }
 
     /** 创建一个 ZIP 字节数组（仅含空提示） */

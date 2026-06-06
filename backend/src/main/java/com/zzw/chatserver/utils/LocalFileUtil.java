@@ -3,6 +3,7 @@ package com.zzw.chatserver.utils;
 import org.springframework.web.multipart.MultipartFile;
 
 import java.io.IOException;
+import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -43,6 +44,22 @@ public class LocalFileUtil {
             path = Paths.get(System.getProperty("user.dir"), uploadDir);
         }
         return path.toString();
+    }
+
+    public static byte[] download(String fileUrl, String uploadDir) throws IOException {
+        String path = URI.create(fileUrl).getPath();
+        int uploadsIndex = path.indexOf("/uploads/");
+        if (uploadsIndex < 0) {
+            throw new IOException("Invalid local file URL");
+        }
+
+        String relativePath = path.substring(uploadsIndex + "/uploads/".length());
+        Path uploadRoot = Paths.get(resolveUploadDir(uploadDir)).toAbsolutePath().normalize();
+        Path target = uploadRoot.resolve(relativePath).normalize();
+        if (!target.startsWith(uploadRoot)) {
+            throw new IOException("Invalid local file path");
+        }
+        return Files.readAllBytes(target);
     }
 
     private static String resolveSubDir(String ext) {

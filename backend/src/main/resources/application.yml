@@ -4,3 +4,9 @@ spring:
 
 logging:
   config: classpath:logback-spring-${spring.profiles.active}.xml
+
+turn:
+  url: ${TURN_URL:turn:turn.webchat.beer:3478}
+  stun-url: ${STUN_URL:stun:turn.webchat.beer:3478}
+  shared-secret: ${TURN_SHARED_SECRET:}
+  credential-ttl-seconds: ${TURN_CREDENTIAL_TTL_SECONDS:600}

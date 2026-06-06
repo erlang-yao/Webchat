@@ -14,9 +14,11 @@ import com.zzw.chatserver.service.UserService;
 import com.zzw.chatserver.utils.FastDFSUtil;
 import com.zzw.chatserver.utils.LocalFileUtil;
 import com.zzw.chatserver.utils.SystemUtil;
+import com.zzw.chatserver.utils.TurnCredentialUtil;
 import org.apache.commons.io.IOUtils;
 import org.csource.common.MyException;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -27,11 +29,17 @@ import javax.servlet.http.HttpServletResponse;
 import java.io.IOException;
 import java.net.URLEncoder;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Controller
 @RequestMapping("/sys")
 public class SysController {
+
+    private static final int FACE_IMAGE_COUNT = 6;
 
     @Resource
     private SysService sysService;
@@ -44,6 +52,18 @@ public class SysController {
 
     @Value("${file.base-url:http://localhost:5555/chat}")
     private String fileBaseUrl;
+
+    @Value("${turn.url:}")
+    private String turnUrl;
+
+    @Value("${turn.stun-url:}")
+    private String stunUrl;
+
+    @Value("${turn.shared-secret:}")
+    private String turnSharedSecret;
+
+    @Value("${turn.credential-ttl-seconds:600}")
+    private long turnCredentialTtlSeconds;
 
     @Resource
     private SensitiveFilter sensitiveFilter;
@@ -68,10 +88,9 @@ public class SysController {
         /*for (File item : Objects.requireNonNull(file.listFiles())) {
             files.add(item.getName());
         }*/
-        for (int i = 1; i <= 22; i++) {
+        for (int i = 1; i <= FACE_IMAGE_COUNT; i++) {
             files.add("face" + i + ".jpg");
         }
-        files.add("ronaldo1.jpg");
         return R.ok().data("files", files);
     }
 
@@ -84,6 +103,37 @@ public class SysController {
         List<SystemUserResponseVo> sysUsers = sysService.getSysUsers();
         // System.out.println("系统用户有：" + sysUsers);
         return R.ok().data("sysUsers", sysUsers);
+    }
+
+    @GetMapping("/turnCredentials")
+    @ResponseBody
+    public R getTurnCredentials() {
+        if (turnUrl == null || turnUrl.trim().isEmpty()
+                || turnSharedSecret == null || turnSharedSecret.trim().isEmpty()) {
+            return R.error().message("TURN server is not configured");
+        }
+
+        String userId = String.valueOf(SecurityContextHolder.getContext().getAuthentication().getPrincipal());
+        long expiresAt = System.currentTimeMillis() / 1000 + turnCredentialTtlSeconds;
+        String username = expiresAt + ":" + userId;
+
+        Map<String, Object> turnServer = new HashMap<>();
+        turnServer.put("urls", Arrays.asList(
+                turnUrl + "?transport=udp",
+                turnUrl + "?transport=tcp"
+        ));
+        turnServer.put("username", username);
+        turnServer.put("credential", TurnCredentialUtil.createPassword(turnSharedSecret, username));
+
+        List<Map<String, Object>> iceServers = new ArrayList<>();
+        if (stunUrl != null && !stunUrl.trim().isEmpty()) {
+            iceServers.add(Collections.singletonMap("urls", stunUrl));
+        }
+        iceServers.add(turnServer);
+
+        return R.ok()
+                .data("iceServers", iceServers)
+                .data("expiresAt", expiresAt);
     }
 
     /**
@@ -125,12 +175,18 @@ public class SysController {
      * 前端从消息中的 FastDFS 路径截取 fileId，下载时使用 fileRawName 作为保存文件名
      */
     @GetMapping("/downloadFile")
-    public void downloadFile(@RequestParam("fileId") String fileId,
+    public void downloadFile(@RequestParam(value = "fileId", required = false) String fileId,
+                             @RequestParam(value = "filePath", required = false) String filePath,
                              @RequestParam("fileName") String fileName,
                              HttpServletResponse resp) {
         try {
             // 从 FastDFS 读取文件二进制内容
-            byte[] bytes = FastDFSUtil.downloadFile(fileId);
+            byte[] bytes;
+            if (filePath != null && filePath.contains("/uploads/")) {
+                bytes = LocalFileUtil.download(filePath, uploadDir);
+            } else {
+                bytes = FastDFSUtil.downloadFile(fileId);
+            }
             resp.setCharacterEncoding("UTF-8");
             // attachment 触发浏览器下载，而非直接在页面打开
             resp.setHeader("Content-disposition", "attachment;filename=" + URLEncoder.encode(fileName, "UTF-8"));

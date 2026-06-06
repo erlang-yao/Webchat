@@ -20,9 +20,6 @@
             <div>个性签名：{{ friendInfo.signature === '' ? '这个人很懒，什么都没有留下..': friendInfo.signature }}</div>
             <div>性别：{{ friendInfo.sex === 0 ? "男" : friendInfo.sex === 1 ? "女" : "保密"}}</div>
             <div>年龄：{{ friendInfo.age }}</div>
-            <div>省份：{{ friendInfo.province && friendInfo.province.name }}</div>
-            <div>城市：{{ friendInfo.city && friendInfo.city.name }}</div>
-            <div>城镇：{{ friendInfo.town && friendInfo.town.name }}</div>
             <div v-if="friendInfo.email">邮箱：{{ friendInfo.email }}</div>
           </span>
         </div>
@@ -48,9 +45,6 @@
             <div>个性签名：{{ friendInfo.signature === '' ? '这个人很懒，什么都没有留下..': friendInfo.signature }}</div>
             <div>性别：{{ friendInfo.sex === 0 ? "男" : friendInfo.sex === 1 ? "女" : "保密"}}</div>
             <div>年龄：{{ friendInfo.age }}</div>
-            <div>省份：{{ friendInfo.province && friendInfo.province.name }}</div>
-            <div>城市：{{ friendInfo.city && friendInfo.city.name }}</div>
-            <div>城镇：{{ friendInfo.town && friendInfo.town.name }}</div>
             <div v-if="friendInfo.email">邮箱：{{ friendInfo.email }}</div>
           </span>
         </div>

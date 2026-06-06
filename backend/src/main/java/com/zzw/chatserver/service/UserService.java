@@ -40,14 +40,19 @@ public class UserService {
         Integer code = null;
         String msg = null;
         String userCode = null;
-        if (!rVo.getRePassword().equals(rVo.getPassword())) {
-            code = ResultEnum.INCORRECT_PASSWORD_TWICE.getCode();
-            msg = ResultEnum.INCORRECT_PASSWORD_TWICE.getMessage();
+        if (rVo == null || rVo.getPassword() == null || rVo.getRePassword() == null
+                || !rVo.getRePassword().equals(rVo.getPassword())) {
+            map.put("code", ResultEnum.INCORRECT_PASSWORD_TWICE.getCode());
+            map.put("msg", ResultEnum.INCORRECT_PASSWORD_TWICE.getMessage());
+            map.put("userCode", null);
+            return map;
         }
         User existUser = userDao.findUserByUsername(rVo.getUsername());
         if (existUser != null) {
-            code = ResultEnum.USER_HAS_EXIST.getCode();
-            msg = ResultEnum.USER_HAS_EXIST.getMessage();
+            map.put("code", ResultEnum.USER_HAS_EXIST.getCode());
+            map.put("msg", ResultEnum.USER_HAS_EXIST.getMessage());
+            map.put("userCode", null);
+            return map;
         } else {
             //生成用户唯一标识账号code
             AccountPool accountPool = new AccountPool();

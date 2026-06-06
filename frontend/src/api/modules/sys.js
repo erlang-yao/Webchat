@@ -13,6 +13,10 @@ export default {
   getFaceImages() {
     return request.get(`/api/sys/getFaceImages`)
   },
+  /** Get temporary TURN credentials for WebRTC calls. */
+  getTurnCredentials() {
+    return request.get(`/api/sys/turnCredentials`)
+  },
   /**上传文件 */
   uploadFile(data) {
     return request.post(`/api/sys/uploadFile`, data)

@@ -37,8 +37,7 @@
         activeFenZu: '',
         groupCategory: [
           {id: 0, category: 'myHolderGroup', text: '我创建的群聊'},
-          {id: 1, category: 'myManagerGroup', text: '我管理的群聊'},
-          {id: 2, category: 'myJoinGroup', text: '我加入的群聊'}
+          {id: 1, category: 'myJoinGroup', text: '我加入的群聊'}
         ]
       }
     },
@@ -49,16 +48,12 @@
       myHolderGroup() {
         return this.conversationList.filter(item => item.holder)
       },
-      myManagerGroup() {
-        return this.conversationList.filter(item => item.manager)
-      },
       myJoinGroup() {
-        return this.conversationList.filter(item => !item.holder && !item.manager)
+        return this.conversationList.filter(item => !item.holder)
       },
       groupCategoryMap() {
         return {
           myHolderGroup: this.myHolderGroup,
-          myManagerGroup: this.myManagerGroup,
           myJoinGroup: this.myJoinGroup
         }
       }

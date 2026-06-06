@@ -1,124 +1,119 @@
 package com.zzw.chatserver.service;
 
+import com.zzw.chatserver.common.ResultEnum;
+import com.zzw.chatserver.dao.AccountPoolDao;
 import com.zzw.chatserver.dao.UserDao;
 import com.zzw.chatserver.pojo.User;
 import com.zzw.chatserver.pojo.vo.RegisterRequestVo;
 import com.zzw.chatserver.pojo.vo.UpdateUserPwdRequestVo;
+import org.bson.types.ObjectId;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 
 import java.util.Map;
+import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.*;
-import static org.mockito.Mockito.*;
+import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertNull;
+import static org.junit.jupiter.api.Assertions.assertSame;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
-/**
- * UserService 单元测试
- */
 @ExtendWith(MockitoExtension.class)
-public class UserServiceTest {
+class UserServiceTest {
 
     @Mock
     private UserDao userDao;
-
     @Mock
-    private BCryptPasswordEncoder passwordEncoder;
+    private AccountPoolDao accountPoolDao;
+    @Mock
+    private MongoTemplate mongoTemplate;
+    @Mock
+    private BCryptPasswordEncoder bCryptPasswordEncoder;
 
     @InjectMocks
     private UserService userService;
 
-    private RegisterRequestVo registerRequestVo;
-    private User testUser;
+    private RegisterRequestVo registerRequest;
 
     @BeforeEach
-    public void setUp() {
-        registerRequestVo = new RegisterRequestVo();
-        registerRequestVo.setUsername("testuser");
-        registerRequestVo.setPassword("123456");
-        registerRequestVo.setRePassword("123456");
-
-        testUser = new User();
-        testUser.setUid("1");
-        testUser.setUsername("testuser");
-        testUser.setPassword("encrypted_password");
+    void setUp() {
+        registerRequest = new RegisterRequestVo();
+        registerRequest.setUsername("testuser");
+        registerRequest.setPassword("123456");
+        registerRequest.setRePassword("123456");
     }
 
-    /**
-     * TC_USER_001: 正常注册用户
-     */
     @Test
-    public void testRegisterSuccess() {
+    void registerReturnsSuccessAfterUserIsPersisted() {
         when(userDao.findUserByUsername("testuser")).thenReturn(null);
-        when(passwordEncoder.encode("123456")).thenReturn("encrypted_password");
+        when(bCryptPasswordEncoder.encode("123456")).thenReturn("encrypted");
+        when(userDao.save(any(User.class))).thenAnswer(invocation -> {
+            User user = invocation.getArgument(0);
+            user.setUserId(new ObjectId());
+            return user;
+        });
 
-        Map<String, Object> result = userService.register(registerRequestVo);
+        Map<String, Object> result = userService.register(registerRequest);
 
-        assertNotNull(result);
-        verify(userDao, times(1)).findUserByUsername("testuser");
+        assertEquals(ResultEnum.REGISTER_SUCCESS.getCode(), result.get("code"));
+        verify(accountPoolDao).save(any());
+        verify(userDao).save(any(User.class));
     }
 
-    /**
-     * TC_USER_002: 用户名已存在
-     */
     @Test
-    public void testRegisterUserExists() {
-        when(userDao.findUserByUsername("testuser")).thenReturn(testUser);
+    void registerRejectsExistingUsernameWithoutWriting() {
+        when(userDao.findUserByUsername("testuser")).thenReturn(new User());
 
-        assertThrows(Exception.class, () -> userService.register(registerRequestVo));
+        Map<String, Object> result = userService.register(registerRequest);
+
+        assertEquals(ResultEnum.USER_HAS_EXIST.getCode(), result.get("code"));
+        assertNull(result.get("userCode"));
+        verify(accountPoolDao, never()).save(any());
+        verify(userDao, never()).save(any(User.class));
     }
 
-    /**
-     * TC_USER_003: 密码为空
-     */
     @Test
-    public void testRegisterEmptyPassword() {
-        RegisterRequestVo vo = new RegisterRequestVo();
-        vo.setUsername("testuser");
-        vo.setPassword(null);
-        vo.setRePassword(null);
+    void registerRejectsMissingPasswordWithoutQueryingDatabase() {
+        registerRequest.setPassword(null);
 
-        assertThrows(Exception.class, () -> userService.register(vo));
+        Map<String, Object> result = userService.register(registerRequest);
+
+        assertEquals(ResultEnum.INCORRECT_PASSWORD_TWICE.getCode(), result.get("code"));
+        verify(userDao, never()).findUserByUsername(any());
     }
 
-    /**
-     * TC_USER_INFO_001: 根据userId查询用户信息
-     */
     @Test
-    public void testGetUserInfo() {
-        when(userDao.findUserByUsername("testuser")).thenReturn(testUser);
+    void getUserInfoUsesMongoObjectId() {
+        ObjectId userId = new ObjectId();
+        User user = new User();
+        user.setUserId(userId);
+        when(userDao.findById(userId)).thenReturn(Optional.of(user));
 
-        User result = userService.getUserInfo("1");
+        User result = userService.getUserInfo(userId.toHexString());
 
-        // getUserInfo 依赖 uid，验证 service 层被正确调用
-        assertNotNull(result != null ? result : testUser);
+        assertSame(user, result);
     }
 
-    /**
-     * TC_USER_UPDATE_001: 修改用户昵称
-     */
     @Test
-    public void testUpdateUserNickname() {
-        testUser.setNickname("新昵称");
+    void updatePasswordRejectsMismatchedConfirmationWithoutDatabaseAccess() {
+        UpdateUserPwdRequestVo request = new UpdateUserPwdRequestVo();
+        request.setUserId(new ObjectId().toHexString());
+        request.setOldPwd("123456");
+        request.setNewPwd("newpass123");
+        request.setReNewPwd("differentpass");
 
-        assertEquals("新昵称", testUser.getNickname());
-    }
+        Map<String, Object> result = userService.updateUserPwd(request);
 
-    /**
-     * TC_USER_UPDATE_003: 修改密码 - 两次密码不一致
-     */
-    @Test
-    public void testUpdatePasswordMismatch() {
-        UpdateUserPwdRequestVo vo = new UpdateUserPwdRequestVo();
-        vo.setUserId("1");
-        vo.setOldPwd("123456");
-        vo.setNewPwd("newpass123");
-        vo.setReNewPwd("differentpass");
-
-        assertThrows(Exception.class, () -> userService.updateUserPwd(vo));
+        assertEquals(ResultEnum.INCORRECT_PASSWORD_TWICE.getCode(), result.get("code"));
+        verify(userDao, never()).findById(any());
     }
 }

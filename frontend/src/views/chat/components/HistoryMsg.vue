@@ -6,7 +6,6 @@
         <el-radio-group v-model="searchType" size="mini" @change="searchTypeChange">
           <el-radio-button value="all" label="全部"></el-radio-button>
           <el-radio-button value="img" label="图片"></el-radio-button>
-          <el-radio-button value="file" label="文件"></el-radio-button>
         </el-radio-group>
       </div>
       <div class="item search">
@@ -64,8 +63,7 @@
   // 前端展示文案与后端 type 参数的映射
   const typeTextToValue = {
     '全部': 'all',
-    '图片': 'img',
-    '文件': 'file'
+    '图片': 'img'
   }
   export default {
     props: {
@@ -124,7 +122,7 @@
           this.isLoading = false
         })
       },
-      // 切换消息类型（全部/图片/文件）时重置到第一页
+      // 切换消息类型（全部/图片）时重置到第一页
       searchTypeChange() {
         this.pageIndex = 1
         this.getHistoryMsg()

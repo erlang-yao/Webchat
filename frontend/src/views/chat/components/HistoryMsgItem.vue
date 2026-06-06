@@ -56,7 +56,15 @@
        * fileName 用于服务端设置 Content-Disposition，保证下载时使用原始文件名
        */
       download() {
-        return "/api/sys/downloadFile?fileId=" + this.msgItem.message.slice(this.msgItem.message.indexOf('group')) + "&fileName=" + this.msgItem.fileRawName
+        const message = this.msgItem.message || ''
+        const params = new URLSearchParams()
+        if (message.indexOf('/uploads/') > -1) {
+          params.set('filePath', message)
+        } else {
+          params.set('fileId', message.slice(message.indexOf('group')))
+        }
+        params.set('fileName', this.msgItem.fileRawName)
+        return `/api/sys/downloadFile?${params.toString()}`
       },
       imgUrlList() {
         return (this.imgTypeMsgList || []).map(item => item.message)
