@@ -126,12 +126,18 @@ public class SysController {
      * 前端从消息中的 FastDFS 路径截取 fileId，下载时使用 fileRawName 作为保存文件名
      */
     @GetMapping("/downloadFile")
-    public void downloadFile(@RequestParam("fileId") String fileId,
+    public void downloadFile(@RequestParam(value = "fileId", required = false) String fileId,
+                             @RequestParam(value = "filePath", required = false) String filePath,
                              @RequestParam("fileName") String fileName,
                              HttpServletResponse resp) {
         try {
             // 从 FastDFS 读取文件二进制内容
-            byte[] bytes = FastDFSUtil.downloadFile(fileId);
+            byte[] bytes;
+            if (filePath != null && filePath.contains("/uploads/")) {
+                bytes = LocalFileUtil.download(filePath, uploadDir);
+            } else {
+                bytes = FastDFSUtil.downloadFile(fileId);
+            }
             resp.setCharacterEncoding("UTF-8");
             // attachment 触发浏览器下载，而非直接在页面打开
             resp.setHeader("Content-disposition", "attachment;filename=" + URLEncoder.encode(fileName, "UTF-8"));
