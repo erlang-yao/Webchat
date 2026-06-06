@@ -5,11 +5,11 @@
     element-loading-spinner="el-icon-loading">
     <div class="video-container" v-show="isToPeer && webRtcType === 'video'">
       <div>
-        <video src id="rtcA" controls autoplay></video>
+        <video src id="rtcA" controls autoplay muted playsinline></video>
         <el-button type="danger" @click="hangup">挂断</el-button>
       </div>
       <div>
-        <video src id="rtcB" controls autoplay></video>
+        <video src id="rtcB" controls autoplay playsinline></video>
       </div>
     </div>
     <div class="audio-container" v-if="webRtcType === 'audio'">
@@ -21,6 +21,8 @@
   </div>
 </template>
 <script>
+  import sysApi from '@/api/modules/sys'
+
   export default {
     name: "CoVideo",
     props: ["currentconversation", "state", "webRtcType"],
@@ -32,20 +34,12 @@
         loadingText: "呼叫中",
         isToPeer: false, // 是否建立了 P2P 连接
         peer: null,
+        pendingIceCandidates: [],
         offerOption: {
           offerToReceiveAudio: 1,
           offerToReceiveVideo: 1
         },
-        iceServers: {
-          iceServers: [
-            {
-              url: 'turn:xxxxx:3478', // xxxxx 为域名
-              credential: '123456', // 密码
-              username: 'admin' // 账号
-            },
-          ],
-          sdpSemantics: 'plan-b'
-        },
+        iceServers: null,
       }
     },
     sockets: {
@@ -54,7 +48,8 @@
         // console.log(data)
         if (data.type && (data.type === 'disagree' || data.type === 'busy')) return
         // 对方同意之后创建自己的 peer
-        await this.createP2P(data)
+        const ready = await this.createP2P(data)
+        if (!ready) return
         // 并给对方发送 offer
         this.createOffer(data)
       },
@@ -108,7 +103,26 @@
         const that = this;
         that.loading = true
         that.loadingText = "正在建立通话连接"
-        await this.createMedia(data)
+        try {
+          await this.loadIceServers()
+          await this.createMedia(data)
+          return true
+        } catch (error) {
+          that.loading = false
+          console.log("createP2P: ", error)
+          that.$message.error("通话连接配置失败")
+          return false
+        }
+      },
+      async loadIceServers() {
+        const response = await sysApi.getTurnCredentials()
+        const result = response.data
+        if (!result.success || !result.data || !result.data.iceServers) {
+          throw new Error(result.message || 'TURN server is not configured')
+        }
+        this.iceServers = {
+          iceServers: result.data.iceServers
+        }
       },
       async createMedia(data) { // 保存本地流到全局
         const that = this;
@@ -139,11 +153,15 @@
             console.log("获取媒体设备异常：", error)
             that.$message.warning("获取媒体设备异常")
           })
+          if (!streamTep) {
+            throw new Error("Media stream is unavailable")
+          }
           that.localStream = streamTep
           let video = document.querySelector("#rtcA")
           video.srcObject = streamTep
         } catch (e) {
           console.log("getUserMedia: ", e)
+          throw e
         }
         await this.initPeer(data) // 获取到媒体流后，调用函数初始化 RTCPeerConnection
       },
@@ -177,6 +195,10 @@
           that.loading = false
           let video = document.querySelector("#rtcB")
           video.srcObject = event.stream
+          const playPromise = video.play()
+          if (playPromise) {
+            playPromise.catch(error => console.log("remote media autoplay failed: ", error))
+          }
           // console.log("video srcObject：", video.srcObject)
         }
       },
@@ -201,6 +223,7 @@
         try {
           // 接收端设置远程 offer 描述
           await this.peer.setRemoteDescription(data.sdp)
+          await this.flushPendingIceCandidates()
           // 接收端创建 answer
           let answer = await this.peer.createAnswer()
           // 接收端设置本地 answer 描述
@@ -218,6 +241,7 @@
         // 接收answer
         try {
           await this.peer.setRemoteDescription(data.sdp) // 呼叫端设置远程 answer 描述
+          await this.flushPendingIceCandidates()
         } catch (e) {
           console.log("onAnswer: ", e)
         }
@@ -225,9 +249,18 @@
       async onIce(data) {
         // 接收 ICE 候选
         try {
+          if (!this.peer || !this.peer.remoteDescription) {
+            this.pendingIceCandidates.push(data.sdp)
+            return
+          }
           await this.peer.addIceCandidate(data.sdp) // 设置远程 ICE
         } catch (e) {
           console.log("onAnswer: ", e)
+        }
+      },
+      async flushPendingIceCandidates() {
+        while (this.pendingIceCandidates.length > 0) {
+          await this.peer.addIceCandidate(this.pendingIceCandidates.shift())
         }
       }
     },
@@ -237,7 +270,8 @@
         this.apply()
       } else if (this.state === 'reply') { // 如果是接收到请求就发起reply
         console.log('接收端回复初始化开始...')
-        await this.createP2P({...this.conversation, webRtcType: this.webRtcType}) // 同意之后创建自己的 peer 等待对方的 offer
+        const ready = await this.createP2P({...this.conversation, webRtcType: this.webRtcType}) // 同意之后创建自己的 peer 等待对方的 offer
+        if (!ready) return
         console.log('接收端初始化结束，开始回复...')
         this.reply()
       }
