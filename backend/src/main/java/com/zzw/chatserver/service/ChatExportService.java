@@ -54,6 +54,7 @@ public class ChatExportService {
         String message;       // 文本内容或媒体 URL/fileId
         String messageType;   // text/img/file/voice/video/audio/sys/emoji
         String fileRawName;   // 媒体文件原始名称
+        String inlineDataUri; // 导出 HTML 内联数据，优先用于图片/语音
 
         boolean isMediaType() {
             return "img".equals(messageType) || "file".equals(messageType)
@@ -218,6 +219,9 @@ public class ChatExportService {
             return;
         }
 
+        // 图片/语音优先内联到 HTML，避免导出包外部路径失效
+        msg.inlineDataUri = buildInlineDataUri(msg, fileBytes);
+
         // 生成媒体文件名
         String ext = extractExt(msg);
         String ts = formatTimestamp(msg.time);
@@ -304,18 +308,13 @@ public class ChatExportService {
 
     /** 直接本地绝对路径/相对 uploads 路径 */
     private byte[] downloadFromLocalPath(String pathStr) throws IOException {
-        Path candidate = Paths.get(pathStr);
-        if (!candidate.isAbsolute()) {
-            Path uploadRoot = Paths.get(LocalFileUtil.resolveUploadDir(uploadDir)).toAbsolutePath().normalize();
-            candidate = uploadRoot.resolve(pathStr).normalize();
-        } else {
-            candidate = candidate.toAbsolutePath().normalize();
+        Path uploadRoot = Paths.get(LocalFileUtil.resolveUploadDir(uploadDir)).toAbsolutePath().normalize();
+        Path candidate = resolveLocalCandidate(pathStr, uploadRoot);
+        if (candidate != null && Files.exists(candidate)) {
+            return Files.readAllBytes(candidate);
         }
 
-        if (!Files.exists(candidate)) {
-            throw new IOException("Local file not found: " + pathStr);
-        }
-        return Files.readAllBytes(candidate);
+        throw new IOException("Local file not found: " + pathStr);
     }
 
     private boolean isDirectLocalPath(String value) {
@@ -323,6 +322,38 @@ public class ChatExportService {
                 || value.matches("^[A-Za-z]:[\\\\/].*")
                 || value.startsWith("uploads/")
                 || value.startsWith("uploads\\");
+    }
+
+    private Path resolveLocalCandidate(String pathStr, Path uploadRoot) {
+        String normalized = pathStr.replace('\\', '/');
+        if (normalized.startsWith("/www/wwwroot/uploads/")) {
+            String relative = normalized.substring("/www/wwwroot/uploads/".length());
+            Path fallback = uploadRoot.resolve(relative).normalize();
+            if (fallback.startsWith(uploadRoot)) {
+                return fallback;
+            }
+        }
+
+        int uploadsIndex = normalized.indexOf("/uploads/");
+        if (uploadsIndex >= 0) {
+            String relative = normalized.substring(uploadsIndex + "/uploads/".length());
+            Path fallback = uploadRoot.resolve(relative).normalize();
+            if (fallback.startsWith(uploadRoot)) {
+                return fallback;
+            }
+        }
+
+        Path candidate = Paths.get(pathStr);
+        if (!candidate.isAbsolute()) {
+            return uploadRoot.resolve(pathStr).normalize();
+        }
+
+        candidate = candidate.toAbsolutePath().normalize();
+        if (Files.exists(candidate)) {
+            return candidate;
+        }
+
+        return candidate;
     }
 
     /** 通过 HTTP 下载文件 */
@@ -506,10 +537,14 @@ public class ChatExportService {
 
                 switch (msg.messageType) {
                     case "img":
-                        sb.append("<br><img src=\"").append(relPath).append("\" alt=\"图片\" loading=\"lazy\">");
+                        sb.append("<br><img src=\"")
+                                .append(escapeHtml(msg.inlineDataUri != null ? msg.inlineDataUri : relPath))
+                                .append("\" alt=\"图片\" loading=\"lazy\">");
                         break;
                     case "voice":
-                        sb.append("<audio src=\"").append(relPath).append("\" controls preload=\"none\"></audio>");
+                        sb.append("<audio src=\"")
+                                .append(escapeHtml(msg.inlineDataUri != null ? msg.inlineDataUri : relPath))
+                                .append("\" controls preload=\"none\"></audio>");
                         break;
                     case "video":
                         sb.append("<video src=\"").append(relPath).append("\" controls preload=\"none\"></video>");
@@ -574,6 +609,65 @@ public class ChatExportService {
         if (text == null) return "";
         return text.replace("&", "&amp;").replace("<", "&lt;")
                 .replace(">", "&gt;").replace("\"", "&quot;");
+    }
+
+    /** 将图片/语音转成 data URI，便于导出 HTML 直接打开 */
+    private String buildInlineDataUri(MsgInfo msg, byte[] content) {
+        if (msg == null || content == null || content.length == 0) {
+            return null;
+        }
+        if (!"img".equals(msg.messageType) && !"voice".equals(msg.messageType)) {
+            return null;
+        }
+
+        String mimeType;
+        String ext = extractExt(msg);
+        if ("img".equals(msg.messageType)) {
+            mimeType = guessImageMimeType(ext);
+        } else {
+            mimeType = guessAudioMimeType(ext);
+        }
+        return "data:" + mimeType + ";base64," + Base64.getEncoder().encodeToString(content);
+    }
+
+    private String guessImageMimeType(String ext) {
+        if (ext == null) {
+            return "image/jpeg";
+        }
+        switch (ext.toLowerCase()) {
+            case "png":
+                return "image/png";
+            case "gif":
+                return "image/gif";
+            case "webp":
+                return "image/webp";
+            case "bmp":
+                return "image/bmp";
+            case "svg":
+            case "svgz":
+                return "image/svg+xml";
+            default:
+                return "image/jpeg";
+        }
+    }
+
+    private String guessAudioMimeType(String ext) {
+        if (ext == null) {
+            return "audio/webm";
+        }
+        switch (ext.toLowerCase()) {
+            case "mp3":
+                return "audio/mpeg";
+            case "ogg":
+                return "audio/ogg";
+            case "wav":
+                return "audio/wav";
+            case "m4a":
+            case "aac":
+                return "audio/aac";
+            default:
+                return "audio/webm";
+        }
     }
 
     /** 创建一个 ZIP 字节数组（仅含空提示） */
