@@ -46,20 +46,6 @@
               </i>
             </label>
           </span>
-          <span class="tool-item">
-            <i class="item el-icon-folder" @click.stop="showUpFileCom = !showUpFileCom" title="文件"/>
-            <transition name="fade">
-              <up-file
-                :visible="showUpFileCom"
-                v-watchMouse="showUpFileCom"
-                @handleSuccess="uploadFileSuccess"
-                class="upFileComponent"
-                @getStatus="getUploadResult"
-                @getLocalUrl="getLocalUrl"
-                :get-status="getUploadResult"
-                :get-local-url="getLocalUrl"/>
-            </transition>
-          </span>
           <span class="tool-item" :class="{ active: isRecording }" @click.stop="toggleVoiceRecord">
             <i class="item iconfont icon-yuyin" title="语音消息"/>
           </span>
@@ -92,7 +78,6 @@
   import {SET_UNREAD_NEWS_TYPE_MAP} from "@/store/constants"
   import {conversationTypes, uploadStatusMap, MSG_TYPES} from '@/const'
   import customEmoji from '@/components/customEmoji'
-  import upFile from '@/components/customUploadFile'
   import groupDesc from './components/GroupDesc'
   import historyMsg from './components/HistoryMsg'
   import xss from '@/utils/xss'
@@ -109,7 +94,6 @@
         messageText: "",
         messages: [],
         showEmojiCom: false,
-        showUpFileCom: false,
         pageIndex: 0,
         pageSize: 15,
         hasMore: true,
@@ -166,35 +150,6 @@
       }
     },
     methods: {
-      uploadFileSuccess(res, file) { // 上传文件成功，通知父组件关闭展示
-        this.showUpFileCom = false
-        // console.log("文件上传成功，结果为：", res, file)
-        let filePath = res.data.filePath
-        let fileType;
-        if (file.raw.type.indexOf('image') > -1) {
-          fileType = 'img'  //图片类型
-        } else {
-          fileType = 'file' //文件类型
-        }
-        const common = this.generatorMessageCommon()
-        const newMessage = {
-          ...common,
-          fileRawName: file.name,
-          message: filePath,
-          messageType: fileType, // emoji/text/img/file/sys/artboard/audio/video
-        }
-        this.messages = [...this.messages, newMessage]
-        // console.log("上传文件后的最新消息为：", newMessage)
-        this.$socket.emit("sendNewMessage", newMessage)
-        this.$store.dispatch('news/SET_LAST_NEWS', {
-          type: 'edit',
-          res: {
-            roomId: this.currentConversation.roomId,
-            news: newMessage
-          }
-        })
-        this.messageText = ""
-      },
       clean() {
         this.messageText = ""
       },
@@ -592,7 +547,6 @@
       },
       handlerShowEmoji() {
         this.showEmojiCom = false
-        this.showUpFileCom = false
       },
       loadmessage() {
         this.scrollBottom = false
@@ -634,7 +588,6 @@
       messageList,
       customEmoji,
       groupDesc,
-      upFile,
       historyMsg
     },
     watch: {
@@ -807,11 +760,6 @@
               opacity: 0;
             }
 
-            .upFileComponent {
-              position: absolute;
-              left: 13px;
-              top: -180px;
-            }
           }
         }
 
