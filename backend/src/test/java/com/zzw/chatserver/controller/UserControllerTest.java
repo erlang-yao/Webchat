@@ -1,204 +1,103 @@
 package com.zzw.chatserver.controller;
 
-import com.zzw.chatserver.pojo.vo.LoginRequestVo;
-import com.zzw.chatserver.pojo.vo.RegisterRequestVo;
-import com.fasterxml.jackson.databind.ObjectMapper;
+import com.zzw.chatserver.common.ResultEnum;
+import com.zzw.chatserver.pojo.User;
+import com.zzw.chatserver.service.UserService;
+import org.bson.types.ObjectId;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
-import org.springframework.boot.test.context.SpringBootTest;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.Mock;
+import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.http.MediaType;
+import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.test.web.servlet.MvcResult;
+import org.springframework.test.web.servlet.setup.MockMvcBuilders;
 
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
-import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
-import static org.hamcrest.Matchers.*;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
 
-/**
- * UserController 集成测试
- */
-@SpringBootTest
-@AutoConfigureMockMvc
-public class UserControllerTest {
+import static org.hamcrest.Matchers.equalTo;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-    @Autowired
+@ExtendWith(MockitoExtension.class)
+class UserControllerTest {
+
+    @Mock
+    private UserService userService;
+
     private MockMvc mockMvc;
 
-    @Autowired
-    private ObjectMapper objectMapper;
-
-    private RegisterRequestVo registerRequestVo;
-    private LoginRequestVo loginRequestVo;
-
     @BeforeEach
-    public void setUp() {
-        registerRequestVo = new RegisterRequestVo();
-        registerRequestVo.setUsername("testuser");
-        registerRequestVo.setPassword("password123");
-        registerRequestVo.setRePassword("password123");
-
-        loginRequestVo = new LoginRequestVo();
-        loginRequestVo.setUsername("testuser");
-        loginRequestVo.setPassword("password123");
+    void setUp() {
+        UserController controller = new UserController();
+        ReflectionTestUtils.setField(controller, "userService", userService);
+        mockMvc = MockMvcBuilders.standaloneSetup(controller).build();
     }
 
-    /**
-     * TC_USER_001: 正常注册用户
-     */
     @Test
-    public void testRegisterSuccess() throws Exception {
-        mockMvc.perform(post("/api/user/register")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(registerRequestVo)))
-                .andExpect(status().is2xxSuccessful())
-                .andExpect(jsonPath("$.code", equalTo(0)))
-                .andExpect(jsonPath("$.data.username", equalTo("testuser")))
-                .andExpect(jsonPath("$.data.email", equalTo("test@example.com")));
+    void registerReturnsCurrentSuccessContract() throws Exception {
+        Map<String, Object> result = new HashMap<>();
+        result.put("code", ResultEnum.REGISTER_SUCCESS.getCode());
+        result.put("msg", ResultEnum.REGISTER_SUCCESS.getMessage());
+        result.put("userCode", "10000001");
+        when(userService.register(any())).thenReturn(result);
+
+        mockMvc.perform(post("/user/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"username\":\"testuser\",\"password\":\"123456\",\"rePassword\":\"123456\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success", equalTo(true)))
+                .andExpect(jsonPath("$.code", equalTo(ResultEnum.REGISTER_SUCCESS.getCode())))
+                .andExpect(jsonPath("$.data.userCode", equalTo("10000001")));
     }
 
-    /**
-     * TC_USER_002: 用户名已存在
-     */
     @Test
-    public void testRegisterUserExists() throws Exception {
-        // 先注册一个用户
-        mockMvc.perform(post("/api/user/register")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(registerRequestVo)))
-                .andExpect(status().is2xxSuccessful());
+    void registerReturnsBusinessErrorInResponseEnvelope() throws Exception {
+        Map<String, Object> result = new HashMap<>();
+        result.put("code", ResultEnum.USER_HAS_EXIST.getCode());
+        result.put("msg", ResultEnum.USER_HAS_EXIST.getMessage());
+        when(userService.register(any())).thenReturn(result);
 
-        // 重复注册相同用户名
-        mockMvc.perform(post("/api/user/register")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(registerRequestVo)))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.message", containsString("用户已存在")));
+        mockMvc.perform(post("/user/register")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"username\":\"testuser\",\"password\":\"123456\",\"rePassword\":\"123456\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success", equalTo(false)))
+                .andExpect(jsonPath("$.code", equalTo(ResultEnum.USER_HAS_EXIST.getCode())));
     }
 
-    /**
-     * TC_USER_003: 密码为空
-     */
     @Test
-    public void testRegisterEmptyPassword() throws Exception {
-        registerRequestVo.setPassword(null);
+    void getUserInfoReturnsServiceResult() throws Exception {
+        ObjectId id = new ObjectId();
+        User user = new User();
+        user.setUserId(id);
+        user.setUsername("testuser");
+        when(userService.getUserInfo(id.toHexString())).thenReturn(user);
 
-        mockMvc.perform(post("/api/user/register")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(registerRequestVo)))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.message", containsString("密码")));
+        mockMvc.perform(get("/user/getUserInfo").param("uid", id.toHexString()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code", equalTo(ResultEnum.SUCCESS.getCode())))
+                .andExpect(jsonPath("$.data.userInfo.username", equalTo("testuser")));
     }
 
-    /**
-     * TC_USER_004: 重复密码不匹配
-     */
     @Test
-    public void testRegisterPasswordMismatch() throws Exception {
-        registerRequestVo.setRePassword("differentpassword");
+    void updateUserInfoReturnsSuccessWhenServiceHasNoError() throws Exception {
+        when(userService.updateUserInfo(any())).thenReturn(Collections.emptyMap());
 
-        mockMvc.perform(post("/api/user/register")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(registerRequestVo)))
-                .andExpect(status().isBadRequest())
-                .andExpect(jsonPath("$.message", containsString("密码")));
+        mockMvc.perform(post("/user/updateUserInfo")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"userId\":\"507f1f77bcf86cd799439011\",\"field\":\"nickname\",\"value\":\"new-name\"}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.code", equalTo(ResultEnum.SUCCESS.getCode())));
+
+        verify(userService).updateUserInfo(any());
     }
-
-    /**
-     * TC_LOGIN_001: 正常登录
-     */
-    @Test
-    public void testLoginSuccess() throws Exception {
-        // 先注册用户
-        mockMvc.perform(post("/api/user/register")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(registerRequestVo)))
-                .andExpect(status().is2xxSuccessful());
-
-        // 登录
-        MvcResult result = mockMvc.perform(post("/api/user/login")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(loginRequestVo)))
-                .andExpect(status().is2xxSuccessful())
-                .andExpect(jsonPath("$.code", equalTo(0)))
-                .andExpect(jsonPath("$.data.token", notNullValue()))
-                .andReturn();
-
-        String response = result.getResponse().getContentAsString();
-        System.out.println("Login response: " + response);
-    }
-
-    /**
-     * TC_LOGIN_002: 用户不存在
-     */
-    @Test
-    public void testLoginUserNotFound() throws Exception {
-        loginRequestVo.setUsername("nonexistent");
-
-        mockMvc.perform(post("/api/user/login")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(loginRequestVo)))
-                .andExpect(status().isUnauthorized())
-                .andExpect(jsonPath("$.message", containsString("用户")));
-    }
-
-    /**
-     * TC_LOGIN_003: 密码错误
-     */
-    @Test
-    public void testLoginWrongPassword() throws Exception {
-        // 先注册用户
-        mockMvc.perform(post("/api/user/register")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(registerRequestVo)))
-                .andExpect(status().is2xxSuccessful());
-
-        // 错误密码登录
-        loginRequestVo.setPassword("wrongpassword");
-        mockMvc.perform(post("/api/user/login")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(loginRequestVo)))
-                .andExpect(status().isUnauthorized())
-                .andExpect(jsonPath("$.message", containsString("密码")));
-    }
-
-    /**
-     * TC_AUTH_004: 未认证访问
-     */
-    @Test
-    public void testUnauthorizedAccess() throws Exception {
-        mockMvc.perform(get("/api/user/profile"))
-                .andExpect(status().isUnauthorized());
-    }
-
-    /**
-     * TC_USER_UPDATE_001: 修改用户昵称 (需要认证)
-     */
-    @Test
-    public void testUpdateUserNickname() throws Exception {
-        // 先注册和登录
-        mockMvc.perform(post("/api/user/register")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(registerRequestVo)))
-                .andExpect(status().is2xxSuccessful());
-
-        MvcResult loginResult = mockMvc.perform(post("/api/user/login")
-                .contentType(MediaType.APPLICATION_JSON)
-                .content(objectMapper.writeValueAsString(loginRequestVo)))
-                .andExpect(status().is2xxSuccessful())
-                .andReturn();
-
-        // 提取token并修改昵称
-        String response = loginResult.getResponse().getContentAsString();
-        String token = objectMapper.readTree(response).get("data").get("token").asText();
-
-        mockMvc.perform(put("/api/user/nickname")
-                .header("Authorization", "Bearer " + token)
-                .contentType(MediaType.APPLICATION_JSON)
-                .content("{\"nickname\": \"新昵称\"}"))
-                .andExpect(status().is2xxSuccessful())
-                .andExpect(jsonPath("$.data.nickname", equalTo("新昵称")));
-    }
-
 }

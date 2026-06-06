@@ -4,7 +4,6 @@ import com.zzw.chatserver.common.ConstValueEnum;
 import org.apache.commons.lang3.StringUtils;
 import org.springframework.util.DigestUtils;
 
-import java.util.Date;
 import java.util.UUID;
 import java.util.regex.Pattern;
 
@@ -39,8 +38,8 @@ public class ChatServerUtil {
     public static String randomNickname() {
         int len = ConstValueEnum.nickNameList.length;
         int random = (int) Math.floor(Math.random() * len);
-        String res = str2HexStr(new Date().toString());
-        return ConstValueEnum.nickNameList[random] + res.substring(res.length() - 2) + random;
+        String suffix = generateUUID().substring(0, 6).toUpperCase();
+        return ConstValueEnum.nickNameList[random] + "-" + suffix;
     }
 
     //字符串转换成为16进制(无需Unicode编码)

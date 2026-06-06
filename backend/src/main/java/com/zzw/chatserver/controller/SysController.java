@@ -33,6 +33,8 @@ import java.util.List;
 @RequestMapping("/sys")
 public class SysController {
 
+    private static final int FACE_IMAGE_COUNT = 6;
+
     @Resource
     private SysService sysService;
 
@@ -68,10 +70,9 @@ public class SysController {
         /*for (File item : Objects.requireNonNull(file.listFiles())) {
             files.add(item.getName());
         }*/
-        for (int i = 1; i <= 22; i++) {
+        for (int i = 1; i <= FACE_IMAGE_COUNT; i++) {
             files.add("face" + i + ".jpg");
         }
-        files.add("ronaldo1.jpg");
         return R.ok().data("files", files);
     }
 

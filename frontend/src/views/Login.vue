@@ -71,7 +71,7 @@
   import canvasImg from './../../static/image/canvas2.jpg'
   import {usernameReg, passwordReg} from '@/utils/index'
 
-  const faceRandom = Math.ceil(Math.random() * 10)
+  const faceRandom = Math.ceil(Math.random() * 6)
   export default {
     name: 'Login',
     data() {
